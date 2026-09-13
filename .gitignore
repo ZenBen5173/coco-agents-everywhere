@@ -12,3 +12,6 @@ assets/fonts/
 
 # Web approval and attempt metadata (not task storage)
 .data/
+
+.vercel
+.env*
