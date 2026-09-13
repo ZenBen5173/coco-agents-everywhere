@@ -47,6 +47,8 @@ export function AppControl() {
         said_by: c.source_text,
         reasoning: c.reasoning,
       })),
+      lists: ws.lists,
+      notes: ws.notes.slice(0, 20).map((n) => ({ id: n.id, body: n.body.slice(0, 300), pinned: n.pinned })),
       items: ws.items.map((i) => ({
         id: i.id,
         type: i.type,
@@ -56,6 +58,7 @@ export function AppControl() {
         due_date: i.due_date,
         all_day: i.all_day,
         status: i.status,
+        tag: i.tag,
         late: Boolean(i.status === "open" && i.due_date && daysUntil(i.due_date, now, ws.timeZone) < 0),
         human_confirmed: i.human_confirmed,
         source_text: i.source_text,
@@ -67,7 +70,7 @@ export function AppControl() {
     {
       name: "update_item",
       description:
-        "Apply a human's correction to an item on the board: title, owner, due date, type or status. Marks it human_confirmed. Use for 'the X deadline is tomorrow', 'that one is Amy's', 'mark Y done', 'drop Z'.",
+        "Apply a human's correction to an item on the board: title, owner, due date, type, status or list (tag). Marks it human_confirmed. Use for 'the X deadline is tomorrow', 'that one is Amy's', 'mark Y done', 'drop Z'.",
       parameters: z.object({
         itemId: z.string(),
         title: z.string().min(1).max(200).optional(),
@@ -78,10 +81,12 @@ export function AppControl() {
           .describe("YYYY-MM-DD or YYYY-MM-DDTHH:MM in the team's timezone, or the word 'none' to clear the date."),
         type: z.enum(CAPTURE_TYPES).optional(),
         status: z.enum(ITEM_STATUSES).optional(),
+        tag: z.string().optional().describe("A list name like 'hackathon' or 'personal'; the empty string removes it."),
       }),
-      handler: async ({ itemId, due_date, owner_slack_id, ...rest }) => {
+      handler: async ({ itemId, due_date, owner_slack_id, tag, ...rest }) => {
         try {
           const edit: ItemEdit = { ...rest };
+          if (tag !== undefined) edit.tag = tag.trim() ? tag.trim().toLowerCase().split(/\s+/).join("-").slice(0, 24) : null;
           if (owner_slack_id !== undefined) edit.owner_slack_id = owner_slack_id || null;
           if (due_date !== undefined) {
             if (due_date === "" || due_date.toLowerCase() === "none") {
@@ -107,6 +112,28 @@ export function AppControl() {
 
   useFrontendTool(
     {
+      name: "add_note",
+      description:
+        "Keep a sticky note for the team — something worth remembering that is not a task ('the judges' room is B-12', 'Amy prefers the ramen place'). Stored verbatim; use the user's words.",
+      parameters: z.object({
+        body: z.string().min(1).max(2000).describe("The note, in markdown. Use '- [ ]' for checklist lines."),
+        colour: z.enum(["amber", "rose", "violet", "sky", "emerald", "slate"]).optional(),
+      }),
+      handler: async ({ body, colour }) => {
+        try {
+          const note = await ws.createNote({ body, colour: colour ?? "slate" });
+          toast.success("Note kept");
+          return { status: "ok", note: { id: note.id, body: note.body } };
+        } catch (error) {
+          return fail(error);
+        }
+      },
+    },
+    [ws.createNote],
+  );
+
+  useFrontendTool(
+    {
       name: "open_item",
       description: "Open an item's editor panel on screen so the user can see it. Read-only; changes nothing.",
       parameters: z.object({ itemId: z.string() }),
@@ -121,13 +148,13 @@ export function AppControl() {
   useFrontendTool(
     {
       name: "go_to",
-      description: "Navigate the page: overview, review (the pending queue) or board (tab: mine, everyone, late, done).",
+      description: "Navigate the page: overview, review (the pending queue), board (tab: mine, everyone, late, done) or notes.",
       parameters: z.object({
-        page: z.enum(["overview", "review", "board"]),
+        page: z.enum(["overview", "review", "board", "notes"]),
         tab: z.enum(["mine", "everyone", "late", "done"]).optional(),
       }),
       handler: async ({ page, tab }) => {
-        const href = page === "overview" ? "/" : page === "review" ? "/review" : `/board${tab ? `?tab=${tab}` : ""}`;
+        const href = page === "overview" ? "/" : page === "review" ? "/review" : page === "notes" ? "/notes" : `/board${tab ? `?tab=${tab}` : ""}`;
         router.push(href);
         return { status: "ok", message: `Navigated to ${href}.` };
       },

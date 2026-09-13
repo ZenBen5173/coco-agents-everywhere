@@ -11,13 +11,15 @@
  * breadcrumbs that stagger in.
  */
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useRef, useState, type ReactNode } from "react";
 import { motion } from "motion/react";
-import { MessageSquare, Menu } from "lucide-react";
+import { MessageSquare, Menu, X } from "lucide-react";
 import { CheckCheckIcon } from "@/components/ui/check-check";
 import { CalendarDaysIcon } from "@/components/ui/calendar-days";
 import { LayoutIcon } from "@/components/ui/layout";
+import { StickyNoteIcon } from "@/components/ui/sticky-note";
+import { FlameIcon } from "@/components/ui/flame";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { AmbientField } from "@/components/ambient-field";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
@@ -28,6 +30,7 @@ import {
   SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
+  SidebarGroupLabel,
   SidebarInset,
   SidebarMenu,
   SidebarMenuBadge,
@@ -44,6 +47,7 @@ import { AppControl } from "@/components/app-control";
 import { GenerativeUI } from "@/components/generative-ui";
 import { ItemSheet } from "@/components/item-sheet";
 import { useWorkspace } from "@/lib/store";
+import { tagDot } from "@/lib/tag-colours";
 import { SPRING } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
@@ -51,6 +55,8 @@ const PAGES: { href: string; label: string; match: (p: string) => boolean }[] = 
   { href: "/", label: "Overview", match: (p) => p === "/" },
   { href: "/review", label: "Review", match: (p) => p.startsWith("/review") },
   { href: "/board", label: "Board", match: (p) => p.startsWith("/board") },
+  { href: "/notes", label: "Notes", match: (p) => p.startsWith("/notes") },
+  { href: "/progress", label: "Progress", match: (p) => p.startsWith("/progress") },
 ];
 
 export function Chrome({ children }: { children: ReactNode }) {
@@ -132,9 +138,16 @@ function Body({ children }: { children: ReactNode }) {
                     badge={captures.length}
                   />
                   <NavItem icon={CalendarDaysIcon} label="Board" href="/board" active={here.href === "/board"} />
+                  <NavItem icon={StickyNoteIcon as unknown as AnimatedIcon} label="Notes" href="/notes" active={here.href === "/notes"} />
+                  <NavItem icon={FlameIcon as unknown as AnimatedIcon} label="Progress" href="/progress" active={here.href === "/progress"} />
                 </GlidingMenu>
               </SidebarGroupContent>
             </SidebarGroup>
+
+            {/* Lists, used the way a calendar uses tags: click one to see only
+                it, click again to clear. Hidden at icon width, where a column
+                of coloured dots says nothing. */}
+            <ListsGroup />
           </SidebarContent>
           <SidebarFooter className="gap-2 group-data-[collapsible=icon]:hidden">
             <CalendarStatus />
@@ -159,6 +172,67 @@ function Body({ children }: { children: ReactNode }) {
         </SheetContent>
       </Sheet>
     </div>
+  );
+}
+
+/** The open tags, with counts, as a filter on the board. */
+function ListsGroup() {
+  const { lists } = useWorkspace();
+  const { setOpenMobile } = useSidebar();
+  const router = useRouter();
+  const params = useSearchParams();
+  const pathname = usePathname();
+  const [draft, setDraft] = useState("");
+  const active = pathname.startsWith("/board") ? params.get("list") : null;
+
+  const go = (href: string) => {
+    router.push(href);
+    setOpenMobile(false);
+  };
+
+  return (
+    <SidebarGroup className="group-data-[collapsible=icon]:hidden">
+      <SidebarGroupLabel>Lists</SidebarGroupLabel>
+      <SidebarGroupContent>
+        <SidebarMenu>
+          {lists.map((list) => (
+            <SidebarMenuItem key={list.id}>
+              <SidebarMenuButton
+                isActive={active === list.id}
+                onClick={() => go(active === list.id ? "/board" : `/board?list=${encodeURIComponent(list.id)}`)}
+                className="text-sidebar-foreground/70"
+              >
+                <span className={cn("mr-1 size-2 shrink-0 rounded-full", tagDot(list.id))} />
+                <span className="flex-1 truncate text-[13px] capitalize">{list.id}</span>
+                {active === list.id ? (
+                  <X className="size-3 text-muted-foreground" />
+                ) : (
+                  <span className="text-[11px] tabular-nums text-muted-foreground">{list.count}</span>
+                )}
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          ))}
+          {/* A list with nothing in it would vanish on reload, so this just
+              filters to a tag that does not exist yet; tagging an item makes it real. */}
+          <SidebarMenuItem>
+            <input
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key !== "Enter") return;
+                const value = draft.trim().toLowerCase().split(/\s+/).join("-").slice(0, 24);
+                if (value.length < 2) return;
+                setDraft("");
+                go(`/board?list=${encodeURIComponent(value)}`);
+              }}
+              placeholder="New list…"
+              maxLength={24}
+              className="mt-1 w-full rounded-md bg-transparent px-2 py-1.5 text-[13px] text-sidebar-foreground/70 outline-none placeholder:text-muted-foreground/60 hover:bg-sidebar-accent/50 focus:bg-sidebar-accent/50"
+            />
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarGroupContent>
+    </SidebarGroup>
   );
 }
 

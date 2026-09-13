@@ -19,6 +19,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { useWorkspace } from "@/lib/store";
+import { tagDot } from "@/lib/tag-colours";
 import { TYPE_META, STATUS_META } from "@/lib/labels";
 import { cn } from "@/lib/utils";
 
@@ -29,6 +30,7 @@ type Form = {
   date: string; // YYYY-MM-DD or ""
   time: string; // HH:MM or ""
   status: (typeof ITEM_STATUSES)[number];
+  tag: string; // "" = none
 };
 
 const NOBODY = "__nobody__";
@@ -43,6 +45,7 @@ function toForm(row: CaptureRow | ItemRow, timeZone: string): Form {
     date: row.due_date ? localDay(new Date(row.due_date), timeZone) : "",
     time: f && !row.all_day ? `${pad(f.hour)}:${pad(f.minute)}` : "",
     status: "status" in row && (ITEM_STATUSES as readonly string[]).includes(row.status) ? (row.status as Form["status"]) : "open",
+    tag: row.tag ?? "",
   };
 }
 
@@ -55,6 +58,7 @@ export function ItemSheet() {
   const open = row !== null;
 
   const [form, setForm] = useState<Form | null>(null);
+  const [newTag, setNewTag] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -96,6 +100,7 @@ export function ItemSheet() {
       }
     }
     if (mode === "item" && form.status !== before.status) edit.status = form.status;
+    if (form.tag !== before.tag) edit.tag = form.tag || null;
     return edit;
   }
 
@@ -222,6 +227,54 @@ export function ItemSheet() {
             </div>
           </div>
           <p className="-mt-3 text-xs text-muted-foreground">Clear the date for no deadline. No time means all day.</p>
+
+          <div className="grid gap-2">
+            <Label>List</Label>
+            <div className="flex flex-wrap gap-1.5">
+              {[...new Set([...ws.lists.map((l) => l.id), ...(form.tag ? [form.tag] : [])])].map((t) => (
+                <button
+                  key={t}
+                  type="button"
+                  onClick={() => set("tag", form.tag === t ? "" : t)}
+                  disabled={busy}
+                  className={cn(
+                    "inline-flex items-center gap-1.5 rounded-md border px-2 py-1 text-xs capitalize transition-colors",
+                    form.tag === t ? "border-foreground/30 bg-muted text-foreground" : "border-transparent bg-muted/40 text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  <span className={cn("size-2 rounded-full", tagDot(t))} />
+                  {t}
+                </button>
+              ))}
+              <button
+                type="button"
+                onClick={() => set("tag", "")}
+                disabled={busy}
+                className={cn(
+                  "rounded-md border px-2 py-1 text-xs transition-colors",
+                  form.tag === "" ? "border-foreground/30 bg-muted text-foreground" : "border-transparent bg-muted/40 text-muted-foreground hover:text-foreground",
+                )}
+              >
+                No list
+              </button>
+            </div>
+            <Input
+              value={newTag}
+              onChange={(e) => setNewTag(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key !== "Enter") return;
+                e.preventDefault();
+                const value = newTag.trim().toLowerCase().split(/\s+/).join("-").slice(0, 24);
+                if (value.length < 2) return;
+                set("tag", value);
+                setNewTag("");
+              }}
+              placeholder="New list…"
+              maxLength={24}
+              disabled={busy}
+              className="h-8 text-xs"
+            />
+          </div>
 
           {mode === "item" && (
             <div className="grid gap-2">

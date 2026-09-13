@@ -17,6 +17,7 @@ import { EmptyState } from "@/components/empty-state";
 import { MathCurveLoader } from "@/components/ui/math-curve-loader";
 import { useWorkspace } from "@/lib/store";
 import { TYPE_META, confidenceLabel } from "@/lib/labels";
+import { tagChip } from "@/lib/tag-colours";
 import { cn } from "@/lib/utils";
 
 export function ReviewQueue() {
@@ -111,6 +112,7 @@ function CaptureItem({ capture: c, index }: { capture: CaptureRow; index: number
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
             <span className={cn("rounded px-1.5 py-0.5 text-[10px] font-medium", meta.chip)}>{meta.label}</span>
+            {c.tag && <span className={cn("rounded-full px-1.5 py-0.5 text-[10px] font-medium capitalize", tagChip(c.tag))}>{c.tag}</span>}
             <button
               type="button"
               onClick={() => setSelectedCaptureId(c.id)}

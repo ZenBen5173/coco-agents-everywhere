@@ -150,6 +150,7 @@ describe("list_board", () => {
       reasoning: null,
       status: "pending",
       reviewed_at: null,
+      tag: null,
       created_at: new Date().toISOString(),
     },
   ];
@@ -170,6 +171,7 @@ describe("list_board", () => {
       updated_at: "",
       completed_at: null,
       calendar_event_id: null,
+      tag: null,
     },
     {
       id: "i2",
@@ -187,6 +189,7 @@ describe("list_board", () => {
       updated_at: "",
       completed_at: null,
       calendar_event_id: null,
+      tag: null,
     },
   ];
 

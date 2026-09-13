@@ -18,6 +18,7 @@ import {
 import type { CaptureRow, ItemEdit, ItemRow, Member } from "agent-core/shared";
 import { resolveTimeZone } from "agent-core/shared";
 import { browserClient } from "./supabase-browser";
+import type { Note, NoteChanges } from "./note-types";
 
 export type Workspace = {
   ready: boolean;
@@ -27,6 +28,10 @@ export type Workspace = {
   captures: CaptureRow[];
   /** Every item on the board. */
   items: ItemRow[];
+  /** Sticky notes, unarchived, pinned first then by position. */
+  notes: Note[];
+  /** Every tag in use, with how many open items carry it. Most-used first. */
+  lists: { id: string; count: number }[];
   me: string | null;
   setMe: (id: string | null) => void;
   timeZone: string;
@@ -38,6 +43,10 @@ export type Workspace = {
   approve: (captureId: string, overrides?: ItemEdit) => Promise<ItemRow>;
   bin: (captureId: string) => Promise<void>;
   updateItem: (itemId: string, edit: ItemEdit) => Promise<ItemRow>;
+  createNote: (fields: { body: string; colour?: string | null; pinned?: boolean }) => Promise<Note>;
+  updateNote: (id: string, changes: NoteChanges) => Promise<void>;
+  deleteNote: (id: string) => Promise<void>;
+  reorderNotes: (order: string[]) => Promise<void>;
   refresh: () => Promise<void>;
   memberName: (id: string | null | undefined) => string;
   member: (id: string | null | undefined) => Member | undefined;
@@ -68,6 +77,7 @@ export function WorkspaceProvider({
   const [members, setMembers] = useState<Member[]>([]);
   const [captures, setCaptures] = useState<CaptureRow[]>([]);
   const [items, setItems] = useState<ItemRow[]>([]);
+  const [notes, setNotes] = useState<Note[]>([]);
   const [ready, setReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [me, setMeState] = useState<string | null>(null);
@@ -103,12 +113,19 @@ export function WorkspaceProvider({
       return;
     }
     loading.current = (async () => {
-      const [m, c, i] = await Promise.all([
+      const [m, c, i, n] = await Promise.all([
         db.from("members").select("*").order("display_name"),
         db.from("captures").select("*").eq("status", "pending").order("created_at", { ascending: false }),
         db.from("items").select("*").order("due_date", { ascending: true, nullsFirst: false }),
+        db
+          .from("notes")
+          .select("*")
+          .is("archived_at", null)
+          .order("pinned", { ascending: false })
+          .order("position", { ascending: true })
+          .order("created_at", { ascending: false }),
       ]);
-      const failed = m.error ?? c.error ?? i.error;
+      const failed = m.error ?? c.error ?? i.error ?? n.error;
       if (failed) {
         setError(failed.message);
       } else {
@@ -116,6 +133,7 @@ export function WorkspaceProvider({
         setMembers((m.data ?? []) as Member[]);
         setCaptures((c.data ?? []) as CaptureRow[]);
         setItems((i.data ?? []) as ItemRow[]);
+        setNotes((n.data ?? []) as Note[]);
       }
       setReady(true);
     })().finally(() => {
@@ -134,6 +152,7 @@ export function WorkspaceProvider({
       .on("postgres_changes", { event: "*", schema: "public", table: "captures" }, () => void refresh())
       .on("postgres_changes", { event: "*", schema: "public", table: "items" }, () => void refresh())
       .on("postgres_changes", { event: "*", schema: "public", table: "members" }, () => void refresh())
+      .on("postgres_changes", { event: "*", schema: "public", table: "notes" }, () => void refresh())
       .subscribe();
     const poll = setInterval(() => void refresh(), 20_000);
     return () => {
@@ -155,9 +174,33 @@ export function WorkspaceProvider({
   }, []);
 
   const updateItem = useCallback(async (itemId: string, edit: ItemEdit) => {
-    const { item } = await call<{ item: ItemRow }>(`/api/items/${itemId}`, "PATCH", edit);
+    const { item } = await call<{ item: ItemRow }>(`/api/items/${itemId}`, "PATCH", { ...edit, actor: me });
     setItems((rows) => rows.map((r) => (r.id === item.id ? item : r)));
     return item;
+  }, [me]);
+
+  // Notes: change locally first, then write, so a pin or a drag lands instantly.
+  const createNote = useCallback(async (fields: { body: string; colour?: string | null; pinned?: boolean }) => {
+    const { note } = await call<{ note: Note }>("/api/notes", "POST", fields);
+    setNotes((rows) => [note, ...rows.filter((r) => r.id !== note.id)]);
+    return note;
+  }, []);
+  const updateNote = useCallback(async (id: string, changes: NoteChanges) => {
+    setNotes((rows) => (changes.archived ? rows.filter((r) => r.id !== id) : rows.map((r) => (r.id === id ? { ...r, ...changes } : r))));
+    await call(`/api/notes/${id}`, "PATCH", changes);
+  }, []);
+  const deleteNote = useCallback(async (id: string) => {
+    setNotes((rows) => rows.filter((r) => r.id !== id));
+    await fetch(`/api/notes/${id}`, { method: "DELETE" });
+  }, []);
+  const reorderNotes = useCallback(async (order: string[]) => {
+    setNotes((rows) => {
+      const byId = new Map(rows.map((r) => [r.id, r]));
+      const moved = order.map((id) => byId.get(id)).filter((r): r is Note => Boolean(r));
+      const rest = rows.filter((r) => !order.includes(r.id));
+      return [...moved, ...rest];
+    });
+    await call("/api/notes/reorder", "POST", { order });
   }, []);
 
   const member = useCallback(
@@ -168,6 +211,13 @@ export function WorkspaceProvider({
     (id: string | null | undefined) => (id ? (member(id)?.display_name ?? id) : "Nobody yet"),
     [member],
   );
+
+  const lists = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const i of items) if (i.tag) counts.set(i.tag, (counts.get(i.tag) ?? 0) + (i.status === "open" ? 1 : 0));
+    for (const c of captures) if (c.tag && !counts.has(c.tag)) counts.set(c.tag, 0);
+    return [...counts.entries()].map(([id, count]) => ({ id, count })).sort((a, b) => b.count - a.count || a.id.localeCompare(b.id));
+  }, [items, captures]);
 
   const value = useMemo<Workspace>(
     () => ({
@@ -184,14 +234,20 @@ export function WorkspaceProvider({
       setSelectedItemId,
       selectedCaptureId,
       setSelectedCaptureId,
+      notes,
+      lists,
       approve,
       bin,
       updateItem,
+      createNote,
+      updateNote,
+      deleteNote,
+      reorderNotes,
       refresh,
       memberName,
       member,
     }),
-    [ready, error, members, captures, items, me, setMe, timeZone, channelName, selectedItemId, selectedCaptureId, approve, bin, updateItem, refresh, memberName, member],
+    [ready, error, members, captures, items, notes, lists, me, setMe, timeZone, channelName, selectedItemId, selectedCaptureId, approve, bin, updateItem, createNote, updateNote, deleteNote, reorderNotes, refresh, memberName, member],
   );
 
   return <WorkspaceContext.Provider value={value}>{children}</WorkspaceContext.Provider>;

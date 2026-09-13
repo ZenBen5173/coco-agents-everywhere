@@ -10,6 +10,14 @@ export const itemEditSchema = z
     all_day: z.boolean().optional(),
     type: z.enum(CAPTURE_TYPES).optional(),
     status: z.enum(ITEM_STATUSES).optional(),
+    tag: z
+      .string()
+      .trim()
+      .toLowerCase()
+      .transform((t) => t.split(/\s+/).join("-").slice(0, 24))
+      .pipe(z.string().min(2).max(24))
+      .nullable()
+      .optional(),
   })
   .strict();
 

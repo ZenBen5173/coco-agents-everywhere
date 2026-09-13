@@ -20,6 +20,7 @@ Agents, Everywhere · AI Tinkerers Kuala Lumpur · 12–13 September 2026
 - The extractor and date handling: `packages/agent-core/src/capabilities/extract.ts`, `dates.ts`, `types.ts`, `supabase.ts`, the `COMMIT_ROLE` prompt.
 - The web app: `apps/web/src/lib/store.tsx` (live data + the three actions), the review queue, the board (list / kanban / table, Mine / Everyone / Late / Done), the item editor, the chat tools (`app-control.tsx`) and the click-gated `approve_capture` / `bin_capture` (`generative-ui.tsx`), the three route handlers.
 - The Slack agent's domain: `list_board`, `capture_from_thread`, the `item_list` card, the welcome card, the injectable store.
+- Notes, Lists, the Progress game (engine re-implemented in TypeScript from myTask's Python), and the Google Calendar mirror — all wired to COCO's board.
 - Tests: dates, tools, components, listener message mapping.
 
 ## Title and description

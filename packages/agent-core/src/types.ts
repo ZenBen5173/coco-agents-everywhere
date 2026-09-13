@@ -37,6 +37,8 @@ export type CaptureRow = {
   source_ts: string;
   confidence: number;
   reasoning: string | null;
+  /** An open list tag — 'hackathon', 'personal' — or null. */
+  tag: string | null;
   status: CaptureStatus;
   reviewed_at: string | null;
   created_at: string;
@@ -59,9 +61,10 @@ export type ItemRow = {
   completed_at: string | null;
   /** Google Calendar event COCO created for it, if any. */
   calendar_event_id: string | null;
+  tag: string | null;
 };
 
 /** Fields a human may override when approving or correcting. */
 export type ItemEdit = Partial<
-  Pick<ItemRow, "title" | "owner_slack_id" | "due_date" | "all_day" | "type" | "status">
+  Pick<ItemRow, "title" | "owner_slack_id" | "due_date" | "all_day" | "type" | "status" | "tag">
 >;

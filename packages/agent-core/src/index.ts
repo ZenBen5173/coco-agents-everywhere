@@ -19,6 +19,7 @@ export {
   type ExtractedCapture,
 } from "./capabilities/extract";
 export { serviceClient, isSupabaseConfigured } from "./supabase";
+export { summary as gameSummary, awardForItem, claimQuests, openEgg, setEquipped, PETS, EGGS, QUESTS } from "./capabilities/game";
 export {
   calendarConnection,
   isCalendarConnected,

@@ -30,7 +30,8 @@ Slack #channel
 
 apps/web  · Next.js + CopilotKit React v2 + Supabase Realtime
    /review  Add · Edit-then-add · Bin
-   /board   Mine · Everyone · Late · Done  (list / kanban / table)
+   /board   Mine · Everyone · Late · Done  (list / kanban / table), filtered by list
+   /notes   sticky notes · /progress  streak, quests, buddies
    chat panel on every page → update_item, approve_capture (click-gated), bin_capture (click-gated)
 
 packages/agent-core · the shared brain: model selection, the extractor, date handling, prompt
@@ -82,6 +83,9 @@ npm run verify           # typecheck + tests across every workspace
 - **Corrections** (`PATCH /api/items/:id`): from the sheet, the table, a kanban drag, or the chat — every path sets `human_confirmed = true`.
 - **Chat gates**: `approve_capture` and `bin_capture` are human-in-the-loop tools. The agent proposes, a card waits, the person clicks. Typing "approve all of those" still ends in one click per item.
 - **Live**: the pages subscribe to Supabase Realtime on `captures` and `items`, with a 20-second poll as a fallback.
+- **Notes** (`/notes`): sticky notes for things worth keeping that aren't tasks — markdown, checklists, six paper colours, pin, archive, drag to reorder. Stored verbatim; no model call on the way in. The chat can `add_note`.
+- **Lists**: an open tag on items and captures (`hackathon`, `personal`…). The sidebar shows every list with its open count; click to filter the board, type "New list…" to start one. Set from the editor, the table, or by telling the chat.
+- **Progress** (`/progress`, ported from myTask's game engine into `packages/agent-core/src/capabilities/game.ts`): XP and coins for promises kept — finishing, meeting a deadline, finishing early, clearing something overdue — a forgiving streak with grace days and freezes, three daily quests, eggs that hatch buddies who multiply earnings. Per member. Rewards come only from real work and nothing is ever taken away; every number is recomputed server-side.
 - **Google Calendar** (`packages/agent-core/src/capabilities/calendar.ts`, ported from myTask): one shared team calendar, connected once from the sidebar (or a refresh token in `.env`). Approving an item with a due date creates an event; changing the date moves it; done ticks it off (`✓`, time freed); dropped deletes it. Best-effort — the board never waits on Google.
 
 ## Sponsor technologies

@@ -9,7 +9,9 @@
 import { useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "motion/react";
-import { CalendarCheck2, Inbox, Lock, UserRound } from "lucide-react";
+import { CalendarCheck2, Inbox, Lock, UserRound, X } from "lucide-react";
+import Link from "next/link";
+import { tagChip } from "@/lib/tag-colours";
 import { toast } from "sonner";
 import type { ItemRow, ItemStatus } from "agent-core/shared";
 import { daysUntil, formatDue, localDay, parseDue, relativeDue } from "agent-core/shared";
@@ -50,24 +52,27 @@ export function Board() {
   const router = useRouter();
   const params = useSearchParams();
   const tab = (TABS.some((t) => t.id === params.get("tab")) ? params.get("tab") : "everyone") as Tab;
+  const list = params.get("list");
+  const tabHref = (t: string) => `/board?tab=${t}${list ? `&list=${encodeURIComponent(list)}` : ""}`;
   const [view, setView] = useState<View>("list");
   const now = new Date();
 
   const isLate = (i: ItemRow) => i.status === "open" && !!i.due_date && daysUntil(i.due_date, now, ws.timeZone) < 0;
 
   const visible = useMemo(() => {
-    const open = ws.items.filter((i) => i.status === "open");
+    const inList = list ? ws.items.filter((i) => i.tag === list) : ws.items;
+    const open = inList.filter((i) => i.status === "open");
     switch (tab) {
       case "mine":
         return open.filter((i) => ws.me && i.owner_slack_id === ws.me);
       case "late":
         return open.filter(isLate);
       case "done":
-        return ws.items.filter((i) => i.status === "done");
+        return inList.filter((i) => i.status === "done");
       default:
         return open;
     }
-  }, [ws.items, ws.me, tab]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [ws.items, ws.me, tab, list]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const counts = {
     mine: ws.items.filter((i) => i.status === "open" && ws.me && i.owner_slack_id === ws.me).length,
@@ -79,13 +84,25 @@ export function Board() {
   return (
     <div className="mx-auto w-full max-w-5xl px-4 py-6 sm:px-6">
       <header className="mb-4">
-        <h1 className="font-display text-2xl font-semibold tracking-tight">Board</h1>
+        <h1 className="flex items-center gap-2 font-display text-2xl font-semibold tracking-tight">
+          {list ? <span className="capitalize">{list}</span> : "Board"}
+          {list && (
+            <Link
+              href={`/board?tab=${tab}`}
+              aria-label="Clear list filter"
+              className="inline-flex items-center gap-1 rounded-full border border-border/70 px-2 py-0.5 text-xs font-medium text-muted-foreground transition-colors hover:border-foreground/30 hover:text-foreground"
+            >
+              <X className="size-3" />
+              Clear
+            </Link>
+          )}
+        </h1>
         <p className="mt-1 text-sm text-muted-foreground">
           {localDay(now, ws.timeZone)} · {visible.length} item{visible.length === 1 ? "" : "s"} · only what a human approved
         </p>
       </header>
 
-      <Tabs value={tab} onValueChange={(v) => router.replace(`/board?tab=${v}`)}>
+      <Tabs value={tab} onValueChange={(v) => router.replace(tabHref(v))}>
         <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
           <TabsList>
             {TABS.map((t) => (
@@ -209,6 +226,11 @@ function ItemLine({ item: i, index }: { item: ItemRow; index: number }) {
       >
         {i.title}
       </button>
+      {i.tag && (
+        <Link href={`/board?list=${encodeURIComponent(i.tag)}`} className={cn("hidden rounded-full px-1.5 py-0.5 text-[10px] font-medium capitalize sm:inline-flex", tagChip(i.tag))}>
+          {i.tag}
+        </Link>
+      )}
       {i.human_confirmed && (
         <span className="hidden items-center gap-1 rounded bg-emerald-500/15 px-1.5 py-0.5 text-[10px] font-medium text-emerald-600 sm:inline-flex dark:text-emerald-400" title="Corrected by a human; Slack can't overwrite it">
           <Lock className="size-3" /> confirmed
@@ -327,6 +349,7 @@ function TableView({ items }: { items: ItemRow[] }) {
         return meta ? <span className={cn("rounded px-1.5 py-0.5 text-[10px] font-medium", meta.chip)}>{meta.label}</span> : null;
       },
     },
+    { key: "tag", label: "List", type: "text", editable: true, renderCell: (value) => (value ? <span className={cn("rounded-full px-1.5 py-0.5 text-[10px] font-medium capitalize", tagChip(String(value)))}>{String(value)}</span> : null) },
     { key: "confirmed", label: "Confirmed", type: "checkbox", editable: false },
     { key: "source", label: "Said in Slack", type: "text", editable: false, width: 320 },
   ];
@@ -337,6 +360,7 @@ function TableView({ items }: { items: ItemRow[] }) {
     owner: i.owner_slack_id ?? "",
     due: i.due_date ? localDay(new Date(i.due_date), ws.timeZone) : null,
     status: i.status,
+    tag: i.tag ?? "",
     confirmed: i.human_confirmed,
     source: i.source_text,
   }));
@@ -357,6 +381,7 @@ function TableView({ items }: { items: ItemRow[] }) {
             else if (key === "type") await ws.updateItem(rowId, { type: value as ItemRow["type"] });
             else if (key === "owner") await ws.updateItem(rowId, { owner_slack_id: value ? String(value) : null });
             else if (key === "status") await ws.updateItem(rowId, { status: value as ItemStatus });
+            else if (key === "tag") await ws.updateItem(rowId, { tag: String(value ?? "").trim() || null });
             else if (key === "due") {
               if (!value) await ws.updateItem(rowId, { due_date: null, all_day: true });
               else {

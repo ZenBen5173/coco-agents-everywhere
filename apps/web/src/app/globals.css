@@ -766,3 +766,24 @@
 .ck-chat > div:last-child > div > div {
   background: transparent !important;
 }
+
+/* The coin: a six-frame strip stepped by keyframe rather than tweened. */
+.coin {
+  background-image: url("/coin.png");
+  background-repeat: no-repeat;
+  background-position: 0 0;
+  image-rendering: pixelated;
+}
+.coin-spin {
+  animation: coin-turn 0.66s steps(6) infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .coin-spin {
+    animation: none;
+  }
+}
+@keyframes coin-turn {
+  to {
+    background-position: var(--coin-strip) 0;
+  }
+}

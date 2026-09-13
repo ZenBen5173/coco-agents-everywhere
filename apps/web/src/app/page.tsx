@@ -8,15 +8,18 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "motion/react";
-import { ArrowRight, Inbox } from "lucide-react";
+import { ArrowRight, Flame, Inbox } from "lucide-react";
 import type { ItemRow } from "agent-core/shared";
 import { addDays, daysUntil, fieldsOf, formatDue, localDay, relativeDue } from "agent-core/shared";
 import { useWorkspace } from "@/lib/store";
+import { useGame } from "@/lib/use-game";
+import { collectable } from "@/lib/game-types";
 import { TYPE_META } from "@/lib/labels";
 import { greetingFor, type Greeting } from "@/lib/greeting";
 import { DURATION, EASE } from "@/lib/motion";
 import { ListView } from "@/components/board";
 import { EmptyState } from "@/components/empty-state";
+import { DashboardNotes } from "@/components/dashboard-notes";
 import { CalendarDaysIcon } from "@/components/ui/calendar-days";
 import { BreathingBars, SheenRing, SweepSparkline } from "@/components/ui/living-charts";
 import { LiquidMetal } from "@/components/ui/liquid-metal";
@@ -36,6 +39,7 @@ function byDay(instants: (string | null)[], now: Date, tz: string): { counts: nu
 export default function Overview() {
   const ws = useWorkspace();
   const { captures, items, ready, timeZone, channelName, me, memberName, setSelectedCaptureId } = ws;
+  const { game } = useGame();
   const now = new Date();
 
   const open = items.filter((i) => i.status === "open");
@@ -96,6 +100,27 @@ export default function Overview() {
         <div>
           <h1 className="font-display text-2xl font-semibold tracking-tight">{greeting.salutation}</h1>
           <p className="mt-1 text-sm text-muted-foreground">{greeting.aside || `Listening to #${channelName}.`}</p>
+          {me && (
+            <Link
+              href="/progress"
+              className="mr-2 mt-3 inline-flex items-center gap-3 rounded-full border border-border/70 bg-card/50 py-1 pl-2.5 pr-3 text-xs backdrop-blur-sm transition-colors hover:border-foreground/30"
+            >
+              <span className="inline-flex items-center gap-1">
+                <Flame className={cn("size-3.5", game.streak > 0 ? "fill-amber-500/20 text-amber-500" : "text-muted-foreground/50")} />
+                <span className="tabular-nums">{game.streak}</span>
+              </span>
+              <span className="h-3 w-px bg-border" />
+              <span className="text-muted-foreground">
+                Level <span className="tabular-nums text-foreground">{game.level}</span>
+              </span>
+              {collectable(game) > 0 && (
+                <>
+                  <span className="h-3 w-px bg-border" />
+                  <span className="text-amber-400">coins to collect</span>
+                </>
+              )}
+            </Link>
+          )}
           <div className="mt-3 inline-flex items-center gap-3 rounded-full border border-border/70 bg-card/50 py-1 pl-3 pr-3 text-xs backdrop-blur-sm">
             <span className="text-muted-foreground">
               <span className="tabular-nums text-foreground">{open.length}</span> open
@@ -129,6 +154,10 @@ export default function Overview() {
           </Link>
         </div>
       </motion.div>
+
+      {/* Notes sit under the greeting and above the numbers: near enough to be
+          seen, far enough not to be the headline. */}
+      <DashboardNotes />
 
       <motion.div
         initial={{ opacity: 0, y: 10 }}
