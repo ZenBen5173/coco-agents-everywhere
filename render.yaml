@@ -1,0 +1,57 @@
+# Render Blueprint: both Slack bots (Tally + COCO) as one free web service.
+#
+#   Render dashboard → New → Blueprint → pick this repo → fill in the secrets.
+#
+# The web app stays on Vercel; this only hosts the two long-running Node
+# processes that Vercel cannot. Free instances sleep after 15 min without
+# inbound HTTP, which scripts/bots.mjs prevents by pinging itself at
+# RENDER_EXTERNAL_URL (set by Render automatically).
+services:
+  - type: web
+    name: coco-bots
+    runtime: node
+    plan: free
+    region: singapore
+    buildCommand: npm ci --include=dev
+    startCommand: npm run start:bots
+    healthCheckPath: /healthz
+    autoDeploy: true
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      # ── model ──
+      - key: MODEL_PROVIDER
+        value: openrouter
+      - key: MODEL
+        value: openai/gpt-5.6-sol
+      - key: OPENROUTER_API_KEY
+        sync: false
+      - key: USER_TIMEZONE
+        value: Asia/Kuala_Lumpur
+      # ── Slack, listener (Tally) ──
+      - key: SLACK_BOT_TOKEN
+        sync: false
+      - key: SLACK_APP_TOKEN
+        sync: false
+      - key: SLACK_CHANNEL_ID
+        sync: false
+      - key: SLACK_CHANNEL_NAME
+        sync: false
+      - key: EXTRACT_DEBOUNCE_MS
+        value: "8000"
+      # ── Slack, reply surface (COCO via CopilotKit Channels) ──
+      - key: INTELLIGENCE_API_KEY
+        sync: false
+      - key: CHANNEL_CODE
+        value: commit-bot
+      - key: WEB_URL
+        value: https://coco-teal.vercel.app
+      - key: LOG_LEVEL
+        value: info
+      # ── Supabase ──
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_KEY
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false

@@ -65,6 +65,17 @@ Offline checks (no credentials needed):
 npm run verify           # typecheck + tests across every workspace
 ```
 
+### Hosting the bots
+
+The web app deploys to Vercel. The two bots are long-running processes and
+cannot; [render.yaml](render.yaml) runs both as one free Render web service.
+In Render: **New → Blueprint**, pick this repo, paste the secrets it asks for.
+The service runs `npm run start:bots`, which starts Tally and COCO under one
+supervisor ([scripts/bots.mjs](scripts/bots.mjs)), answers `/healthz` with the
+state of both, restarts either on a crash, and pings itself every five minutes
+so the free instance never sleeps. Stop the local copies once it is up: two
+runtimes on the same Channel code race for every delivery.
+
 ## Credentials you need
 
 | Piece | What | Where |

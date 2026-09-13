@@ -13,6 +13,12 @@ Deploy it like a queue consumer.
 `apps/web` is an ordinary Next.js app and deploys to Vercel
 fine. It is only the listener that needs a persistent process.
 
+## This repo's answer
+
+`render.yaml` + `scripts/bots.mjs`: one free Render web service running both
+`apps/listener` and `apps/channel` as supervised children, with a health port
+and a self-ping so the free instance stays awake. See the README.
+
 ## Requirements
 
 - Node.js 22+ (global `WebSocket`)
