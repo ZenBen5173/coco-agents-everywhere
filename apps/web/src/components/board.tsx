@@ -6,7 +6,7 @@
  * One filtered set feeds every view, so switching views never changes what
  * you are looking at.
  */
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "motion/react";
 import { CalendarCheck2, Inbox, Lock, UserRound, X } from "lucide-react";
@@ -54,6 +54,11 @@ export function Board() {
   const tab = (TABS.some((t) => t.id === params.get("tab")) ? params.get("tab") : "everyone") as Tab;
   const list = params.get("list");
   const tabHref = (t: string) => `/board?tab=${t}${list ? `&list=${encodeURIComponent(list)}` : ""}`;
+  // Tell the rail which list is showing, and clear it on the way out.
+  useEffect(() => {
+    ws.setActiveList(list);
+    return () => ws.setActiveList(null);
+  }, [list]); // eslint-disable-line react-hooks/exhaustive-deps
   const [view, setView] = useState<View>("list");
   const now = new Date();
 

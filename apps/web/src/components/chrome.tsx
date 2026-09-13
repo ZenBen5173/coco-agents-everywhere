@@ -11,8 +11,8 @@
  * breadcrumbs that stagger in.
  */
 import Link from "next/link";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useRef, useState, type ReactNode } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import { useRef, useState, type ReactNode } from "react";
 import { motion } from "motion/react";
 import { MessageSquare, Menu, X } from "lucide-react";
 import { CheckCheckIcon } from "@/components/ui/check-check";
@@ -147,10 +147,7 @@ function Body({ children }: { children: ReactNode }) {
             {/* Lists, used the way a calendar uses tags: click one to see only
                 it, click again to clear. Hidden at icon width, where a column
                 of coloured dots says nothing. */}
-            {/* useSearchParams needs a boundary or the static /_not-found prerender fails. */}
-            <Suspense fallback={null}>
-              <ListsGroup />
-            </Suspense>
+            <ListsGroup />
           </SidebarContent>
           <SidebarFooter className="gap-2 group-data-[collapsible=icon]:hidden">
             <CalendarStatus />
@@ -180,13 +177,10 @@ function Body({ children }: { children: ReactNode }) {
 
 /** The open tags, with counts, as a filter on the board. */
 function ListsGroup() {
-  const { lists } = useWorkspace();
+  const { lists, activeList: active } = useWorkspace();
   const { setOpenMobile } = useSidebar();
   const router = useRouter();
-  const params = useSearchParams();
-  const pathname = usePathname();
   const [draft, setDraft] = useState("");
-  const active = pathname.startsWith("/board") ? params.get("list") : null;
 
   const go = (href: string) => {
     router.push(href);

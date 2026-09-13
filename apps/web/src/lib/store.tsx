@@ -32,6 +32,9 @@ export type Workspace = {
   notes: Note[];
   /** Every tag in use, with how many open items carry it. Most-used first. */
   lists: { id: string; count: number }[];
+  /** The list the board is filtered to, published by the board page. */
+  activeList: string | null;
+  setActiveList: (id: string | null) => void;
   me: string | null;
   setMe: (id: string | null) => void;
   timeZone: string;
@@ -83,6 +86,7 @@ export function WorkspaceProvider({
   const [me, setMeState] = useState<string | null>(null);
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
   const [selectedCaptureId, setSelectedCaptureId] = useState<string | null>(null);
+  const [activeList, setActiveList] = useState<string | null>(null);
   const timeZone = useMemo(() => resolveTimeZone(), []);
   const loading = useRef<Promise<void> | null>(null);
 
@@ -236,6 +240,8 @@ export function WorkspaceProvider({
       setSelectedCaptureId,
       notes,
       lists,
+      activeList,
+      setActiveList,
       approve,
       bin,
       updateItem,
@@ -247,7 +253,7 @@ export function WorkspaceProvider({
       memberName,
       member,
     }),
-    [ready, error, members, captures, items, notes, lists, me, setMe, timeZone, channelName, selectedItemId, selectedCaptureId, approve, bin, updateItem, createNote, updateNote, deleteNote, reorderNotes, refresh, memberName, member],
+    [ready, error, members, captures, items, notes, lists, activeList, me, setMe, timeZone, channelName, selectedItemId, selectedCaptureId, approve, bin, updateItem, createNote, updateNote, deleteNote, reorderNotes, refresh, memberName, member],
   );
 
   return <WorkspaceContext.Provider value={value}>{children}</WorkspaceContext.Provider>;
