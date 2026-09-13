@@ -1,0 +1,18 @@
+{
+  "name": "listener",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Reads every message in one Slack channel over Socket Mode and turns commitments, decisions and deadlines into review-queue captures.",
+  "scripts": {
+    "dev": "node --env-file=../../.env --import tsx --watch src/server.ts",
+    "start": "node --env-file=../../.env --import tsx src/server.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "node --import tsx --test \"src/**/*.test.ts\""
+  },
+  "dependencies": {
+    "@slack/bolt": "^4.7.3",
+    "agent-core": "*",
+    "zod": "^4.1.0"
+  }
+}

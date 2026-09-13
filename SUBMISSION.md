@@ -1,74 +1,73 @@
-# Submission checklist
+# Submission — COCO
 
-Choose your city on the [global event page](https://aitinkerers.org/hackathons/global/agents-everywhere). Use that city's participant portal for the submission deadline and published judging criteria, and its handbook for eligibility and required deliverables. See [hackathon-rules.md](hackathon-rules.md) for the agent-readable summary.
+Agents, Everywhere · AI Tinkerers Kuala Lumpur · 12–13 September 2026
 
 ## Build eligibility
 
-- [ ] Our submitted project is a net-new build created during the official hackathon period
-- [ ] Its core functionality was built during the event; we are not resubmitting or extending a pre-existing project and entering it as new
-- [ ] We identify inherited templates, libraries, prompts, components, and starter code separately from our event work
+- [x] Net-new build created during the official hackathon period
+- [x] Core functionality built during the event
+- [x] Inherited pieces identified separately below
 
 **What we inherited**
-<!-- Include this starter kit and any reused examples. -->
+
+- The [Agents, Everywhere starter kit](https://github.com/CopilotKit/agents-everywhere-starter-kit): CopilotKit runtime wiring for web and Slack, the managed Channels lifecycle (`apps/channel/src/server.ts`), the `ChannelRunAgent` re-entry fix (`apps/channel/src/agent.ts`), the model adapter (`packages/agent-core/src/model.ts`), the web provider boundary, the test harness and `managed-gateway` fixture, and the Exa search tool (unused in the demo).
+- UI primitives copied from a teammate's earlier personal project: shadcn-style components under `apps/web/src/components/ui`, the Notion-style data table under `gustflow-table`, the kanban under `kibo-ui`, and the Tailwind theme in `globals.css`. Also the *approach* to extraction (a date table in the prompt, model-resolved dates) from that project's Python bot, re-implemented in TypeScript here.
 
 **What we built during the hackathon**
-<!-- Describe the new core interaction and point to its implementation. Running the supplied incident demo alone does not establish a new project. -->
+
+- The domain and the rule: Supabase schema with the `items_guard` trigger and `approve_capture()` — `supabase/schema.sql`.
+- The listener: `apps/listener` — Socket Mode ingest, member sync, backfill, debounced extraction.
+- The extractor and date handling: `packages/agent-core/src/capabilities/extract.ts`, `dates.ts`, `types.ts`, `supabase.ts`, the `COMMIT_ROLE` prompt.
+- The web app: `apps/web/src/lib/store.tsx` (live data + the three actions), the review queue, the board (list / kanban / table, Mine / Everyone / Late / Done), the item editor, the chat tools (`app-control.tsx`) and the click-gated `approve_capture` / `bin_capture` (`generative-ui.tsx`), the three route handlers.
+- The Slack agent's domain: `list_board`, `capture_from_thread`, the `item_list` card, the welcome card, the injectable store.
+- Tests: dates, tools, components, listener message mapping.
 
 ## Title and description
 
-**What you built**
-<!-- Explain the complete interaction your demo shows. -->
+**COCO** — a Slack group agent that hears what people commit to, and lets a human decide what counts.
 
-**Who it is for**
-<!-- Name a person in a concrete situation. -->
+**What you built.** A bot reads one team channel, turns commitments, decisions and deadlines into a review queue with the exact Slack line and speaker attached, and a human clicks Add / Edit-then-add / Bin. Approved items become the board. A chat panel takes corrections in plain English and moves the cards live, locking them against later reads.
 
-**Why the context matters**
-<!-- What did the agent know or do because it lived in this surface? -->
+**Who it is for.** A hackathon team of four in one Slack channel, the night before submission, who have made a dozen promises to each other in passing and cannot remember who said what by when.
 
-**Sponsor technologies used**
-<!-- Name the tools you actually used and the visible contribution of each. -->
+**Why the context matters.** Nobody types anything into the tool. The commitments were already said in Slack, by the person who made them, with the date words they used. The bot knows who "I" is because Slack does, resolves "Sunday 6pm" in the team's timezone, and keeps the quote so the reviewer can tell a plan from a joke. Remove the channel and it is a to-do list somebody has to maintain.
+
+**Sponsor technologies used.**
+- CopilotKit — the web chat panel (React v2 hooks) and the managed Slack Channel.
+- OpenRouter → OpenAI `gpt-5.6-sol` — extraction and the chat agent.
+- Supabase — database, the trigger that enforces the rule, Realtime.
 
 ## Evidence for the judging criteria
 
-Judges score each of the four official criteria from 1–5. This checklist helps you gather evidence; it does not guarantee a score. A working starter is a foundation for your own project.
-
-| Official criterion | Show in your project and demo |
+| Criterion | Where to look in the demo |
 |---|---|
-| Core Requirements & Functionality | Run one complete workflow in the intended environment, from user request through tools to a verified result. Repeat it with live integrations; offline tests alone do not prove the deployed flow. |
-| Innovation & Theme Alignment | Show the surrounding context before the prompt and explain the original interaction it enables. Compare with the context removed: what value would a standalone chatbox lose? |
-| Technical Execution & Integration | Show how tools, data, and the environment connect. Demonstrate a relevant failure or cancellation path and explain recovery, state persistence, and integration limits. |
-| Usefulness & Agentic Experience | Identify the user and problem, show a meaningful action in the surface, and demonstrate clear feedback and appropriate user control. Explain what work the agent saves. |
+| Core Requirements & Functionality | A message in Slack → a capture on `/review` within seconds → click Add → it is on `/board`. Refresh; it is still there (a real Supabase row). |
+| Innovation & Theme Alignment | The source line and speaker on every card. "let Jason do everything" arrives at 18% confidence and gets binned. Try the same with a blank chatbox: there is nothing to bin. |
+| Technical Execution & Integration | Insert into `items` directly in SQL without an approved capture → Postgres refuses. Type "approve all of those" in chat → one click card per item, none of them auto-approved. Decline one → "nothing changed". |
+| Usefulness & Agentic Experience | "the AWS deadline is tomorrow, not today" → the card moves and shows the confirmed lock; the next read of Slack cannot undo it. Mine / Late tabs answer the two questions people actually have. |
 
-- [ ] We can point to visible evidence for every criterion
-- [ ] We distinguish live services, sample data, session-only state, and standalone recipes
-- [ ] Sponsor technologies contribute to the workflow; their count is not a judging criterion
+- [x] Live services: Slack (Socket Mode + managed Channel), Supabase, OpenRouter
+- [x] Sample data: the seeded demo messages are labelled in the channel history; everything else is live
+- [x] Session-only state: the managed Channel's thread subscriptions (in-memory); the "who are you" picker (localStorage)
 
 ## Public repository
 
-- [ ] A new participant can run the quickstart from a clean clone
-- [ ] The README lists the credentials and separate processes required
-- [ ] `npm run verify` passes; optional recipe checks pass if used
-- [ ] `.env`, tokens, generated traces with sensitive data, and account secrets are excluded
-- [ ] Sample data, session-only state, and unimplemented integrations are clearly labeled
+- [ ] Clean-clone quickstart in [README.md](README.md)
+- [x] Credentials and processes listed
+- [x] `npm run verify` passes
+- [x] `.env` excluded; `.env.example` documents every variable
 
 ## Two-minute demo video
 
-- [ ] Show the surface and existing context before the prompt
-- [ ] Demonstrate one complete interaction
-- [ ] Show a visible result: an actual record, local state change, or research source links
-- [ ] If showing an approval, distinguish the decision from execution and demonstrate the resulting behavior
-- [ ] State which sponsor technologies made the interaction possible
-- [ ] Keep the video within the event's limit and check audio
-
-See [demo prompts](dev-docs/demo-prompts.md) for a reproducible incident workflow.
+1. Show the channel with a few real messages already in it.
+2. Type one more commitment; cut to `/review` as it appears.
+3. Add one, Edit-then-add one (fix the owner), Bin the joke.
+4. Board: Mine / Late. Type the correction in chat; watch the card move and lock.
+5. `@commit-bot what's late?` in Slack → native card.
+6. Say which sponsors did what.
 
 ## Social post and final submission
 
-- [ ] Follow the organizer's posting and sponsor-tagging instructions
-- [ ] Link the public repository and video
-- [ ] Credit the sponsors you used and applicable local partners
-- [ ] Check the live integration once more before recording or submitting
-- [ ] Inspect the repository, video and screenshots for secrets
-
-Prepare the post and submission for a human to publish; running the starter kit
-does not publish either automatically.
+- [ ] Post tagging the event partners per organizer instructions
+- [ ] Link repository and video
+- [ ] Final secret sweep of repo, video, screenshots

@@ -1,12 +1,9 @@
 /**
- * Agent-rendered components for the on-call agent.
+ * Agent-rendered components for COCO in Slack.
  *
  * `defineChannelComponent` turns a component into a tool the agent can call to
- * draw UI itself. During an incident, a native card is easier to scan than a
- * paragraph, but everyone reads a card.
- *
- * One tree renders as Slack Block Kit, Teams Adaptive Cards, and Discord
- * components. A surface that cannot render a node skips it rather than failing.
+ * draw UI itself. One tree renders as Slack Block Kit, Teams Adaptive Cards,
+ * and Discord components.
  */
 import {
   defineChannelComponent,
@@ -26,101 +23,74 @@ import {
 } from "@copilotkit/channels";
 import { z } from "zod";
 
-/** Severity drives the colour rail, so the channel can triage by glance. */
-const SEVERITY = {
-  sev1: { accent: "#C4145F", label: "SEV1 · customer-facing" },
-  sev2: { accent: "#8A5C10", label: "SEV2 · degraded" },
-  sev3: { accent: "#5B6478", label: "SEV3 · internal" },
-  resolved: { accent: "#2E7D5B", label: "RESOLVED" },
-} as const;
+export const ACCENT = "#4F46E5";
 
-/**
- * The state of the incident, as one glanceable card.
- *
- * Deliberately has no "what happened" prose field. The thread is the narrative;
- * this is the summary a person joining at minute 40 needs.
- */
-export const IncidentCard = defineChannelComponent({
-  name: "incident_card",
+/** A list of items or pending captures, as a table the channel can scan. */
+export const ItemList = defineChannelComponent({
+  name: "item_list",
   description:
-    "Draw the current state of the incident as a card: severity, what is affected, what is known, and what is being tried. Call this once you have read the thread, and call it again when the picture changes. Prefer it over describing the incident in prose.",
+    "Draw a list of board items or pending captures as a native table. Use it whenever you answer 'what is late / pending / mine / open' or list more than one thing. Prefer it over prose.",
   parameters: z.object({
-    severity: z.enum(["sev1", "sev2", "sev3", "resolved"]),
-    headline: z.string().describe("What is broken, in under ten words."),
-    impact: z.string().describe("Who or what is affected, concretely."),
-    started: z.string().describe("When it started, as stated in the thread. 'unknown' is a valid answer."),
-    known: z.array(z.string()).max(4).default([]).describe("What the thread has established."),
-    trying: z.array(z.string()).max(3).default([]).describe("What is currently being attempted."),
-    owner: z.string().optional().describe("Who is driving, if the thread says."),
-  }),
-  render({ severity, headline, impact, started, known, trying, owner }) {
-    const sev = SEVERITY[severity];
-    return (
-      <Message accent={sev.accent}>
-        <Header>{headline}</Header>
-        <Context>{sev.label}</Context>
-        <Fields>
-          <Field label="Impact">{impact}</Field>
-          <Field label="Started">{started}</Field>
-          {owner && <Field label="Driving">{owner}</Field>}
-        </Fields>
-        {known.length > 0 && (
-          <Section>
-            <Markdown>{`*What we know*\n${known.map((k) => `• ${k}`).join("\n")}`}</Markdown>
-          </Section>
-        )}
-        {trying.length > 0 && (
-          <Section>
-            <Markdown>{`*Being tried*\n${trying.map((t) => `• ${t}`).join("\n")}`}</Markdown>
-          </Section>
-        )}
-      </Message>
-    );
-  },
-});
-
-/**
- * The incident timeline. Handover and the postmortem both run on this, which is
- * why it is worth keeping in the thread rather than someone's notes app.
- */
-export const Timeline = defineChannelComponent({
-  name: "timeline",
-  description:
-    "Draw an ordered timeline of what happened when. Call this when there are three or more events worth ordering — it is what on-call handover and the postmortem are written from.",
-  parameters: z.object({
-    title: z.string().default("Timeline"),
-    events: z
+    title: z.string().default("Items"),
+    rows: z
       .array(
         z.object({
-          at: z.string().describe("Time as the thread states it, e.g. '02:14' or '~20m ago'."),
-          what: z.string().describe("What happened, in one line."),
-          who: z.string().optional(),
+          title: z.string(),
+          owner: z.string().describe("Display name, or 'Nobody yet'."),
+          due: z.string().describe("As given in the data, e.g. 'Fri 18 Sep' or 'No date'."),
+          status: z.string().describe("pending · open · late · done · dropped"),
         }),
       )
       .min(1)
-      .max(12),
+      .max(15),
+    footer: z.string().optional().describe("One line, e.g. '3 late · 2 pending review'."),
   }),
-  render({ title, events }) {
+  render({ title, rows, footer }) {
     return (
-      <Message>
+      <Message accent={ACCENT}>
         <Header>{title}</Header>
-        <Table
-          columns={[{ header: "When" }, { header: "What" }, { header: "Who" }]}
-        >
-          {events.map((event) => (
+        <Table columns={[{ header: "What" }, { header: "Who" }, { header: "When" }, { header: "Status" }]}>
+          {rows.map((r) => (
             <Row>
-              <Cell>{event.at}</Cell>
-              <Cell>{event.what}</Cell>
-              <Cell>{event.who ?? "—"}</Cell>
+              <Cell>{r.title}</Cell>
+              <Cell>{r.owner}</Cell>
+              <Cell>{r.due}</Cell>
+              <Cell>{r.status}</Cell>
             </Row>
           ))}
         </Table>
-        <Divider />
-        <Context>{`${events.length} event(s) · newest last`}</Context>
+        {footer && (
+          <>
+            <Divider />
+            <Context>{footer}</Context>
+          </>
+        )}
       </Message>
     );
   },
 });
+
+/** Posted by capture_from_thread once the review queue has new rows. */
+export function capturedCard(count: number, titles: string[], reviewUrl: string) {
+  return (
+    <Message accent={ACCENT}>
+      <Header>{count === 0 ? "Nothing new to review" : `${count} thing${count === 1 ? "" : "s"} sent to review`}</Header>
+      {titles.length > 0 && (
+        <Section>
+          <Markdown>{titles.map((t) => `• ${t}`).join("\n")}</Markdown>
+        </Section>
+      )}
+      <Context>Nothing is on the board yet. A human decides on the review page.</Context>
+      {count > 0 && (
+        <Actions>
+          <Button url={reviewUrl} style="primary">
+            Open review
+          </Button>
+        </Actions>
+      )}
+    </Message>
+  );
+}
 
 /**
  * The welcome message. A bot that says nothing when invited looks broken; one
@@ -128,31 +98,28 @@ export const Timeline = defineChannelComponent({
  */
 export function welcomeMessage(platform: string) {
   return (
-    <Message accent="#C4145F">
-      <Header>On-call assistant, in the thread</Header>
+    <Message accent={ACCENT}>
+      <Header>COCO is in the room</Header>
       <Section>
         <Markdown>
-          {"When something breaks, @-mention me. I read what has already been said in this " +
+          {"I keep track of what people in this " +
             platform +
-            " thread first — you should never have to re-explain an outage to me."}
+            " channel commit to, decide, and set deadlines for. @-mention me to ask what's pending, what's late, or what you promised."}
         </Markdown>
       </Section>
       <Fields>
-        <Field label="I will">Summarise, keep a timeline, look things up</Field>
-        <Field label="I won't">Touch production without a click</Field>
+        <Field label="I will">Listen, propose, answer</Field>
+        <Field label="I won't">Put anything on the board — that takes a human click</Field>
       </Fields>
       <Actions>
         <Button
-          value="catchup"
+          value="pending"
           style="primary"
           onClick={async ({ thread }) => {
-            await thread.runAgent({
-              prompt:
-                "Read this thread and bring me up to speed on the incident. Draw the incident card.",
-            });
+            await thread.runAgent({ prompt: "What is waiting for review and what is late? Draw an item_list." });
           }}
         >
-          Catch me up
+          What's pending?
         </Button>
       </Actions>
     </Message>

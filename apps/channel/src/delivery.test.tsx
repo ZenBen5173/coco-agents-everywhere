@@ -6,7 +6,7 @@ import { from, type Observable } from "rxjs";
 import { createChannel } from "@copilotkit/channels";
 import { startChannelsWithGatewayControl } from "@copilotkit/channels-intelligence";
 import type { searchWeb } from "agent-core";
-import { IncidentCard } from "./components";
+import { ItemList } from "./components";
 import { createSearchTool } from "./search";
 import { ManagedGateway, preparedDelivery } from "./testing/managed-gateway";
 
@@ -28,14 +28,10 @@ class ResearchAgent extends AbstractAgent {
     const calls = [
       { name: "search_web", args: { query: "retry storm", results: 1 } },
       {
-        name: "incident_card",
+        name: "item_list",
         args: {
-          severity: "sev2",
-          headline: "Retries are amplifying latency",
-          impact: "Checkout requests time out",
-          started: "09:03 UTC",
-          known: ["Connection-pool wait increased"],
-          trying: ["Investigating retry policy"],
+          title: "Late",
+          rows: [{ title: "Retries are amplifying latency", owner: "Amy", due: "Fri 18 Sep", status: "late" }],
         },
       },
     ];
@@ -81,7 +77,7 @@ async function runResearch(search: typeof searchWeb, withIncident = true) {
     identifyUser: "platform",
     showToolStatus: true,
     agent: () => new ResearchAgent(withIncident),
-    components: [IncidentCard],
+    components: [ItemList],
     tools: [createSearchTool(search)],
   });
   let failure: unknown;
@@ -130,7 +126,7 @@ async function runResearch(search: typeof searchWeb, withIncident = true) {
     await gateway.deliver(
       preparedDelivery("research", "slack", {
         kind: "text",
-        text: "Research the incident and show a card",
+        text: "Research retry storms and show what is late",
       }),
     );
     return {
@@ -145,7 +141,7 @@ async function runResearch(search: typeof searchWeb, withIncident = true) {
 }
 
 it(
-  "clears native Slack status before completing a research run with only tool cards",
+  "clears native Slack status before completing a run with only tool cards",
   { timeout: 10_000 },
   async () => {
     const { gateway, payloads, failure, agentMessages } = await runResearch(

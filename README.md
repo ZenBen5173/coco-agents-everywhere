@@ -1,110 +1,104 @@
-<div align="center">
+# COCO
 
-# Agents, Everywhere Hackathon Starter Kit
+**A Slack group agent that hears what people commit to — and lets a human decide what counts.**
 
-![Agents, Everywhere hackathon — OpenAI, CopilotKit, OpenRouter, Exa, Auth0, and Ambiguous AI](assets/banner.png)
+Built for [Agents, Everywhere](https://aitinkerers.org/hackathons/global/agents-everywhere) (AI Tinkerers, Kuala Lumpur, 12–13 September 2026).
 
-**Build an agent that belongs where people already work, talk, and live.**
+## What it does
 
-[Overview](#overview) · [Get started](#get-started) · [Templates](#templates) · [Coding agent](#coding-agent) · [Resources](#resources)
+A small team coordinates in one Slack channel. Commitments, decisions and deadlines are made in passing — "I'll finish the schema tonight", "let's go with Supabase", "submission closes Sunday 6pm" — and then lost in the scroll.
 
-</div>
+COCO reads that channel and turns those lines into a **review queue**. A human opens the review page and clicks **Add**, **Edit-then-add**, or **Bin** on each one. Only what a human approves lands on the **task board**, with an owner, a due date, a status, and the exact Slack line it came from. A chat panel on every page takes corrections in plain English — *"the AWS deadline is tomorrow, not today"* — and the card moves on screen, locked against later reads of the channel.
 
-## Overview
+**The rule that defines it:** the AI only ever writes to the review queue. Only a human action puts something on the board. That is enforced in Postgres by a trigger, not by convention: an `items` row can only be inserted for a capture whose status is `approved`, and the only code path that flips a capture to `approved` is the human's click.
 
-Build for **[Agents, Everywhere: Bots, Channels, & More](https://aitinkerers.org/hackathons/global/agents-everywhere)**, the AI Tinkerers global hackathon on **September 12–13, 2026**. Choose your city on the event page for its local schedule. Put an agent inside a conversation, an app, a phone, or a physical environment. Make the context of that place essential to what it can do.
+## Why the context matters
 
-This kit gives you three runnable templates, files to hand to your coding agent, and sponsor setup notes. Pick a user, a problem, and one complete interaction. You can use any stack; you do not need every sponsor or every surface.
+Take the Slack channel away and this is a to-do app someone has to type into. The whole value is that nobody types anything: the commitments were already said, in the place they were said, by the person who said them. The bot knows who "I" is because Slack does, resolves "tomorrow" in the team's timezone, and keeps the quote so a reviewer can judge whether "let Jason do everything" was a plan or a joke.
 
-Your project and its core functionality must be created during the event. Existing libraries, templates, and starter code are allowed; describe what you reuse and what you build. Read [the rules](hackathon-rules.md), then follow your city's participant portal for the current deadline and judging criteria.
+## The parts
 
-## Get started
+```
+Slack #channel
+   │
+   ├─► apps/listener  · "Tally" · our own Slack app, Socket Mode
+   │       stores every message → batches it through the extractor → captures (pending)
+   │
+   └─► apps/channel   · "COCO" · CopilotKit managed Channel
+           @mention → answers "what's late / pending / mine" with native cards,
+           can send a thread to review. Never writes to the board.
 
-### Onboarding Prompt
+apps/web  · Next.js + CopilotKit React v2 + Supabase Realtime
+   /review  Add · Edit-then-add · Bin
+   /board   Mine · Everyone · Late · Done  (list / kanban / table)
+   chat panel on every page → update_item, approve_capture (click-gated), bin_capture (click-gated)
 
-For web, paste this into your coding agent:
-
-```text
-Help me get started with CopilotKit. Run this command and follow the instructions:
-
-npx --yes copilotkit@latest onboard start
+packages/agent-core · the shared brain: model selection, the extractor, date handling, prompt
+Supabase · members · messages · captures · items  (+ the trigger, + approve_capture())
 ```
 
-For Slack, follow [Channels setup](apps/channel/README.md#get-started). For React Native, follow the [Expo setup instructions](apps/mobile/README.md#get-started).
+## Run it
 
-## Templates
+Node 24 (22+ works). One `.env` at the root — see [.env.example](.env.example).
 
-These starting points serve different kinds of context. **CopilotKit Channels** brings the Slack agent into the conversation; **CopilotKit React** connects the web agent to the app people are using; **CopilotKit React Native** brings the same agent pattern onto a phone.
+```bash
+npm ci
+cp .env.example .env     # fill in model, Slack, Supabase
+```
 
-### 1. Slack — an agent that joins the thread
+Create the database: run [supabase/schema.sql](supabase/schema.sql) in your project's SQL editor (it is exactly the migration the demo uses).
 
-**OpenAI + CopilotKit Channels + Exa**
+Then, in three terminals:
 
-An agent reads what people already said, researches with Exa, and answers in the same thread with native cards and source links. Start with a support conversation, a research discussion, or a team decision.
+```bash
+npm run dev:listener     # Tally — reads the channel, fills the review queue
+npm run dev:web          # http://127.0.0.1:3100
+npm run dev:slack        # optional — the @mention surface (needs CopilotKit Intelligence)
+```
 
-The included Slack app supplies thread history, subscriptions, search, and Channels UI. Configure your model, Exa, and a managed Channel, then run `npm run dev:slack`. No public tunnel is needed. Teams or other chat platforms can use the same Channels pattern, but this starter ships the Slack app.
+Say something in the channel that sounds like a promise. Within ~10 seconds it is on `/review`.
 
-**[Use the Slack template →](apps/channel/)**
+Offline checks (no credentials needed):
 
-### 2. Web — an agent inside your app
+```bash
+npm run verify           # typecheck + tests across every workspace
+```
 
-**OpenAI + CopilotKit React + Ambiguous AI**
+## Credentials you need
 
-An agent sees the page you are on and turns a request into a real workplace record you can still find after a refresh. Adapt it to customer follow-ups, a project workspace, or a personal planning app.
+| Piece | What | Where |
+|---|---|---|
+| Model | OpenRouter key (any tool-capable model; we used `openai/gpt-5.6-sol`) | [openrouter.ai/keys](https://openrouter.ai/keys) |
+| Listener | Your own Slack app: bot token + app token, Socket Mode on, bot in the channel. Scopes `channels:history channels:read users:read app_mentions:read`, event `message.channels` | [api.slack.com/apps](https://api.slack.com/apps) |
+| Database | Supabase project URL, anon key, service-role key | Project settings → API |
+| Reply surface (optional) | CopilotKit Intelligence project key + Channel code | [intelligence.copilotkit.ai](https://intelligence.copilotkit.ai) |
+| Calendar (optional) | Google OAuth client id + secret, redirect URI `http://127.0.0.1:3100/api/google/callback` | Google Cloud console |
 
-The included web app supplies page context, frontend tools, agent-rendered UI, and a browser approval step. Connect an Ambiguous AI workspace, then run `npm run dev:web`; approved follow-ups are saved through the server and can be read back after refresh.
+## How the pieces behave
 
-**[Use the web template →](apps/web/)**
+- **Extraction** (`packages/agent-core/src/capabilities/extract.ts`): the model gets the last few messages for context, the new ones to extract from, the member list, and a table of the next fourteen dates with their weekdays. It returns typed captures with a confidence. Jokes are allowed through at low confidence; a human bins them. Dates come back as `YYYY-MM-DD[THH:MM]` and are resolved in `USER_TIMEZONE`, never UTC.
+- **Dedupe**: `captures` is unique on `(source_ts, type, title)`, so re-reading a thread never duplicates.
+- **Approval** (`approve_capture()` in Postgres): marks the capture approved and inserts the item in one transaction. Any override from Edit-then-add marks the item `human_confirmed`.
+- **Corrections** (`PATCH /api/items/:id`): from the sheet, the table, a kanban drag, or the chat — every path sets `human_confirmed = true`.
+- **Chat gates**: `approve_capture` and `bin_capture` are human-in-the-loop tools. The agent proposes, a card waits, the person clicks. Typing "approve all of those" still ends in one click per item.
+- **Live**: the pages subscribe to Supabase Realtime on `captures` and `items`, with a 20-second poll as a fallback.
+- **Google Calendar** (`packages/agent-core/src/capabilities/calendar.ts`, ported from myTask): one shared team calendar, connected once from the sidebar (or a refresh token in `.env`). Approving an item with a due date creates an event; changing the date moves it; done ticks it off (`✓`, time freed); dropped deletes it. Best-effort — the board never waits on Google.
 
-### 3. React Native — an agent in your pocket
+## Sponsor technologies
 
-**OpenAI or OpenRouter + CopilotKit React Native**
+- **CopilotKit** — the web chat panel (React v2: `useAgentContext`, `useFrontendTool`, `useHumanInTheLoop`, `useComponent`) and the managed Slack Channel (`@copilotkit/channels`).
+- **OpenRouter → OpenAI `gpt-5.6-sol`** — extraction and the chat agent, through the kit's shared model adapter.
+- **Supabase** — the database, the trigger that enforces the rule, and Realtime.
 
-A mobile agent reads app state, renders native cards, and waits for a tap before changing local sample data. Start with a personal finance assistant, a field checklist, an inventory counter, or any workflow where phone context and approval matter.
+## What we inherited and what we built
 
-The included Expo app supplies seeded finance state, native rendered tool UI, a human-in-the-loop expense approval, and a mobile-specific CopilotKit runtime endpoint served by the web app. Configure your model provider, start `npm run dev:web`, then run the mobile app from `apps/mobile`.
+Inherited: the [Agents, Everywhere starter kit](https://github.com/CopilotKit/agents-everywhere-starter-kit) (CopilotKit runtime wiring, the Channels lifecycle, the web provider boundary, the `ChannelRunAgent` re-entry fix, the model adapter, test harness), and UI primitives (shadcn-style components, a Notion-style data table, a kanban) copied from a teammate's earlier personal project.
 
-**[Use the React Native template →](apps/mobile/)**
+Built during the event: everything about the domain — the Supabase schema and its trigger, the listener, the extractor and its date handling, the review queue, the board, the chat tools and gates, the Slack tools and cards, the prompts, and the tests for them. See [SUBMISSION.md](SUBMISSION.md).
 
-### Make the demo yours
+## Known limits
 
-The supplied on-call and finance assistants are **infrastructure examples**: read ambient context, call a tool, render useful UI, and return a verifiable result. Choose a different user, problem, dataset, and interaction; the goal is your own project, not another version of the starter scenario.
-
-Use the [demo prompts](dev-docs/demo-prompts.md) to learn how the pieces connect, then replace the sample domain. In the Slack sample incident flow, approval cards record decisions without executing production actions. In the web follow-up flow, the page approval button saves the reviewed Ambiguous task. In the mobile finance flow, approval changes local in-memory sample data. Enforce the same kind of write boundary around any external action you add.
-
-Want another surface pattern? The web app also includes a voice route, and the shared agent can connect to remote MCP tools when configured. The event surfaces are inspiration, not separate tracks or a requirement to build multiple apps.
-
-## Coding agent
-
-Give your agent these files before it starts coding:
-
-| File | What it provides |
-|---|---|
-| [hackathon-overview.md](hackathon-overview.md) | The challenge, four surfaces, and official judging criteria |
-| [hackathon-rules.md](hackathon-rules.md) | Build eligibility, inherited code, and required deliverables |
-| [using-sponsor-tools.md](using-sponsor-tools.md) | Every sponsor featured in this kit: access, authentication, configuration, and a first working call |
-| [AGENTS.md](AGENTS.md) | Repository conventions and verification commands |
-| [Channels skill](.agents/skills/build-channels-agent/SKILL.md) | Verified Channels APIs for the Slack template |
-
-The app READMEs provide launch commands, files to customize, and a concrete result to check. Start with one template and add a second surface only if it helps your user.
-
-## Resources
-
-| Need | Go here |
-|---|---|
-| Event details, deadline, and judging | [Find your city](https://aitinkerers.org/hackathons/global/agents-everywhere), then open its participant portal and handbook |
-| OpenAI agent development | [Agents SDK quickstart](https://openai.github.io/openai-agents-js/guides/quickstart/) |
-| OpenRouter access and model choice | [Quickstart](https://openrouter.ai/docs/quickstart) · [Keys](https://openrouter.ai/keys) · [Model catalog](https://openrouter.ai/models) · [Model switching](dev-docs/model-switching.md) |
-| CopilotKit app development | [Docs](https://docs.copilotkit.ai/) · [Tools and context](dev-docs/tools-and-context.md) · [Discord channel for technical questions](https://discord.com/channels/1122926057641742418/1548038338848489532) |
-| CopilotKit Channels | [Channels guide](https://copilotkit.ai/channels-guide.md) · [Screenshot walkthrough](dev-docs/channels-sdk-walkthrough/README.md) · [OpenTag example app](https://github.com/CopilotKit/OpenTag) |
-| Exa quickstart | [Search API guide](https://exa.ai/docs/reference/search-api-guide) · [Kit setup](using-sponsor-tools.md#exa) |
-| Auth0 API authorization | [Node API](https://auth0.com/docs/quickstart/backend/nodejs) · [Kit setup](using-sponsor-tools.md#auth0) |
-| Ambiguous AI quickstart | [Developer guide](https://www.ambiguous.ai/llms.txt) · [Kit setup](using-sponsor-tools.md#ambiguous-ai) |
-| Rehearse and debug | [Demo prompts](dev-docs/demo-prompts.md) · [Troubleshooting](dev-docs/troubleshooting.md) |
-| Prepare your entry | [Submission checklist](SUBMISSION.md) |
-
-For credit redemption instructions, choose your city on the [global event page](https://aitinkerers.org/hackathons/global/agents-everywhere) and check its participant portal's **Credits & Offers** section.
-
-For technical questions during the event, check your city's participant portal and ask your local organizers.
-
-For the Slack/web workspaces, `npm run verify` runs typechecks and offline tests without credentials. The mobile app has its own install, tests, typecheck, and Metro export checks under `apps/mobile`. Each app reports missing configuration when the relevant integration is used. Live sponsor calls and platform delivery require your accounts. See [developer docs](dev-docs/README.md) for detailed setup and deployment.
+- Row-level security is off; the browser reads with the anon key. Every write goes through the server, and the board is protected by the trigger, but a public deployment would want RLS and real auth.
+- One channel. `SLACK_CHANNEL_ID` is the whole configuration.
+- "Mine" is whoever you pick in the sidebar — there is no sign-in.
+- The listener keeps its state in Supabase, so restarts backfill what they missed; the managed Channel's subscriptions are in-memory and reset on restart.

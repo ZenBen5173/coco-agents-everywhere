@@ -1,15 +1,16 @@
 import { createChannel } from "@copilotkit/channels";
-import { isSearchConfigured, isWorkplaceConfigured, WORKPLACE_CONTEXT } from "agent-core";
+import { isSearchConfigured } from "agent-core";
 import { makeChannelAgent } from "./agent";
 import { required } from "./env";
-import { IncidentCard, Timeline, welcomeMessage } from "./components";
-import { proposeAction, readThread, searchTheWeb } from "./tools";
+import { ItemList, welcomeMessage } from "./components";
+import { captureFromThread, listBoard, readThread, searchTheWeb } from "./tools";
 
 // Tools are registered only when their credential is present, so the agent is
 // never handed a tool that will fail when it calls it.
 const tools = [
   readThread,
-  proposeAction,
+  listBoard,
+  captureFromThread,
   ...(isSearchConfigured() ? [searchTheWeb] : []),
 ];
 
@@ -26,26 +27,21 @@ export const channel = createChannel({
 
   agent: makeChannelAgent,
   tools,
-  components: [IncidentCard, Timeline],
+  components: [ItemList],
 
   // Injected into the agent's prompt on every run.
   context: [
-    
     {
       description: "Rendering",
       value:
-        "You can draw native UI by calling incident_card or timeline. Prefer them over prose whenever the answer has structure.",
+        "You can draw native UI by calling item_list. Prefer it over prose whenever the answer is a list. Read list_board first so the rows are real.",
     },
-    ...(isWorkplaceConfigured()
-      ? [{ description: "Workplace", value: WORKPLACE_CONTEXT }]
-      : []),
     {
       description: "Surface",
       value:
-        "This is a chat thread in a channel people are actively working in. Assume others are reading and that some joined late.",
+        "This is a Slack channel a small team coordinates in. A separate listener (Tally) already stores every message and proposes captures; call capture_from_thread only when someone asks you to note or track what this thread says. Nothing you do puts anything on the board.",
     },
   ],
-
 });
 
 // A mention subscribes the conversation, so the agent then follows along instead

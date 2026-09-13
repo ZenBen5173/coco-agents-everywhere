@@ -9,10 +9,25 @@
  * So anything a client component needs — the prompt, the model notes, the
  * schemas — lives here, and this module imports nothing from Node.
  */
-export { SYSTEM_PROMPT, SURFACE_RULES, ONCALL_ROLE } from "./prompt";
+export { SYSTEM_PROMPT, SURFACE_RULES, COMMIT_ROLE } from "./prompt";
 export { DEFAULT_MODEL, MODEL_NOTES } from "./model-meta";
 export {
   searchWebParameters,
   type SearchWebArgs,
   type SearchHit,
 } from "./schemas";
+export * from "./types";
+export {
+  DEFAULT_TIMEZONE,
+  resolveTimeZone,
+  fieldsOf,
+  instantOf,
+  localDay,
+  addDays,
+  dateTable,
+  parseDue,
+  daysUntil,
+  formatDue,
+  relativeDue,
+  type ParsedDue,
+} from "./dates";

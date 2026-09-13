@@ -1,5 +1,7 @@
 /** Resolve the selected chat provider. Voice uses OpenAI Realtime separately. */
 import { createOpenAI } from "@ai-sdk/openai";
+import { createAnthropic } from "@ai-sdk/anthropic";
+import type { LanguageModel } from "ai";
 import { DEFAULT_MODEL } from "./model-meta";
 
 function canonicalProvider(provider: string) {
@@ -58,4 +60,21 @@ export function resolveModel() {
   }
 
   return `${provider}:${modelId}`;
+}
+
+/**
+ * The same selection as resolveModel(), but always as an AI SDK model object,
+ * for direct generateObject/generateText calls outside the CopilotKit agent
+ * (the extractor). OpenRouter already comes back as an object; the gateway
+ * string form is mapped onto the matching provider package here.
+ */
+export function resolveLanguageModel(): LanguageModel {
+  const selected = resolveModel();
+  if (typeof selected !== "string") return selected;
+  const separator = selected.indexOf(":");
+  const provider = selected.slice(0, separator);
+  const modelId = selected.slice(separator + 1);
+  if (provider === "openai") return createOpenAI({ apiKey: process.env.OPENAI_API_KEY })(modelId);
+  if (provider === "anthropic") return createAnthropic({ apiKey: process.env.ANTHROPIC_API_KEY })(modelId);
+  throw new Error(`No direct AI SDK adapter for provider '${provider}' here. Use openai, anthropic, or openrouter.`);
 }

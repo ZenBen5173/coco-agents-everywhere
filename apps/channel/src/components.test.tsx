@@ -2,99 +2,68 @@
  * Component tests.
  *
  * `renderToIR` lowers a Channels JSX tree to the platform-neutral IR the
- * adapter is actually handed — `{ type, props }` nodes — so these run with no
- * Slack app, no Intelligence project and no credentials of any kind.
- *
- * That matters for a hackathon kit: change a card, know in a second whether you
- * broke it. Node's built-in runner means there is nothing to install either.
+ * adapter is actually handed, so these run with no Slack app, no Intelligence
+ * project and no credentials of any kind.
  */
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { renderToIR } from "@copilotkit/channels";
-import { IncidentCard, Timeline } from "./components";
+import { ACCENT, ItemList, capturedCard, welcomeMessage } from "./components";
 
 const ctx = { platform: "slack" as const, signal: new AbortController().signal };
 
-/** The rendered IR as a searchable string. */
 async function render(node: unknown): Promise<string> {
   return JSON.stringify(renderToIR((await node) as never));
 }
 
-const baseIncident = {
-  severity: "sev2" as const,
-  headline: "Checkout latency above 4s",
-  impact: "~12% of checkouts, EU region",
-  started: "02:14 UTC",
-  known: [] as string[],
-  trying: [] as string[],
-};
-
-describe("incident_card", () => {
-  it("colours the rail by severity, so the channel can triage by glance", async () => {
-    const sev1 = await render(IncidentCard.render({ ...baseIncident, severity: "sev1" }, ctx));
-    const resolved = await render(IncidentCard.render({ ...baseIncident, severity: "resolved" }, ctx));
-
-    assert.ok(sev1.includes("#C4145F"), "sev1 should use the attention accent");
-    assert.ok(resolved.includes("#2E7D5B"), "resolved should use the good accent");
-    assert.notEqual(sev1, resolved);
-  });
-
-  it("labels the severity in words, not just colour", async () => {
-    // Colour alone fails anyone colour-blind and every screen reader.
-    const out = await render(IncidentCard.render({ ...baseIncident, severity: "sev1" }, ctx));
-    assert.ok(out.includes("SEV1"));
-    assert.ok(out.includes("customer-facing"));
-  });
-
-  it("omits the owner field entirely when the thread has not said who is driving", async () => {
-    const without = await render(IncidentCard.render(baseIncident, ctx));
-    const with_ = await render(IncidentCard.render({ ...baseIncident, owner: "priya" }, ctx));
-
-    assert.ok(!without.includes("Driving"), "no owner should mean no Driving field");
-    assert.ok(with_.includes("Driving"));
-    assert.ok(with_.includes("priya"));
-  });
-
-  it("omits the known/trying sections when empty rather than drawing empty headings", async () => {
-    const empty = await render(IncidentCard.render(baseIncident, ctx));
-    assert.ok(!empty.includes("What we know"));
-    assert.ok(!empty.includes("Being tried"));
-
-    const filled = await render(
-      IncidentCard.render(
-        { ...baseIncident, known: ["Rollback did not help"], trying: ["Draining the queue"] },
+describe("item_list", () => {
+  it("renders one row per item with owner, date and status in words", async () => {
+    const out = await render(
+      ItemList.render(
+        {
+          title: "Late",
+          rows: [
+            { title: "Send the deck", owner: "Amy", due: "Fri 18 Sep", status: "late" },
+            { title: "Book the room", owner: "Nobody yet", due: "No date", status: "open" },
+          ],
+        },
         ctx,
       ),
     );
-    assert.ok(filled.includes("What we know"));
-    assert.ok(filled.includes("Rollback did not help"));
-    assert.ok(filled.includes("Being tried"));
+    assert.ok(out.includes("Send the deck"));
+    assert.ok(out.includes("Amy"));
+    assert.ok(out.includes("Fri 18 Sep"));
+    assert.ok(out.includes("Nobody yet"));
+    assert.ok(out.includes("late"));
+    assert.ok(out.includes(ACCENT));
   });
 
-  it("always carries impact and start time — the two things a late joiner needs", async () => {
-    const out = await render(IncidentCard.render(baseIncident, ctx));
-    assert.ok(out.includes("~12% of checkouts, EU region"));
-    assert.ok(out.includes("02:14 UTC"));
+  it("adds the footer only when given", async () => {
+    const rows = [{ title: "x", owner: "y", due: "z", status: "open" }];
+    const without = await render(ItemList.render({ title: "T", rows }, ctx));
+    const withFooter = await render(ItemList.render({ title: "T", rows, footer: "1 open" }, ctx));
+    assert.ok(!without.includes("1 open"));
+    assert.ok(withFooter.includes("1 open"));
   });
 });
 
-describe("timeline", () => {
-  it("renders every event and counts them in the footer", async () => {
-    const events = [
-      { at: "02:14", what: "Alerts fired", who: "pagerduty" },
-      { at: "02:19", what: "Rolled back web", who: "priya" },
-      { at: "02:31", what: "Latency still high" },
-    ];
-    const out = await render(Timeline.render({ title: "Timeline", events }, ctx));
+describe("capturedCard", () => {
+  it("says nothing reached the board, and links to review only when there is something to review", async () => {
+    const none = await render(capturedCard(0, [], "http://x/review"));
+    assert.match(none, /Nothing new to review/);
+    assert.ok(!none.includes("http://x/review"));
+    assert.match(none, /human decides/i);
 
-    for (const event of events) assert.ok(out.includes(event.what), `missing "${event.what}"`);
-    assert.ok(out.includes("3 event(s)"));
+    const some = await render(capturedCard(2, ["Send the deck", "Use Supabase"], "http://x/review"));
+    assert.match(some, /2 things sent to review/);
+    assert.ok(some.includes("http://x/review"));
+    assert.ok(some.includes("Send the deck"));
   });
+});
 
-  it("fills the who column with a dash rather than leaving a hole", async () => {
-    const out = await render(
-      Timeline.render({ title: "T", events: [{ at: "02:31", what: "no owner" }] }, ctx),
-    );
-    assert.ok(out.includes("—"));
+describe("welcome", () => {
+  it("promises not to write to the board", async () => {
+    const out = await render(welcomeMessage("slack"));
+    assert.match(out, /human click/i);
   });
 });

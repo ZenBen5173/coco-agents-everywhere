@@ -1,533 +1,768 @@
-/* Calm defaults shared by the web example, voice page, and agent cards. */
+@import "tailwindcss";
+
+
+
+/* next-themes writes class="dark" on <html>, so wire Tailwind v4 to that. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ---------------------------------------------------------------------------
+   1. Gallery chrome tokens.
+   Deliberately neutral so previewed components stand out. These are prefixed
+   away from shadcn's names (dim / brand, not muted / accent) so the two token
+   sets never collide.
+   ------------------------------------------------------------------------- */
+@theme {
+  --color-g-canvas: #ffffff;
+  --color-g-surface: #fafafa;
+  --color-g-line: #e8e8e8;
+  --color-g-ink: #101010;
+  --color-g-dim: #6b6b6b;
+  --color-g-brand: #4f46e5;
+
+  /* Body and UI text stays on the system stack — it renders natively and
+     costs nothing. Headings use the display face. */
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+  --font-display: var(--font-instrument-sans), ui-sans-serif, system-ui,
+    sans-serif;
+  --font-mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas,
+    monospace;
+}
+
+.dark {
+  --color-g-canvas: #0a0a0a;
+  --color-g-surface: #111111;
+  --color-g-line: #232323;
+  --color-g-ink: #f2f2f2;
+  --color-g-dim: #8b8b8b;
+  --color-g-brand: #818cf8;
+  --amber: oklch(0.8 0.15 75);
+  --amber-fg: oklch(0.2 0 0);
+  --amber-hover: oklch(0.85 0.14 72);
+  --blue: oklch(0.66 0.18 256);
+  --blue-fg: #fff;
+  --blue-hover: oklch(0.72 0.16 256);
+  --green: oklch(0.73 0.16 152);
+  --green-fg: oklch(0.2 0 0);
+  --green-hover: oklch(0.79 0.15 152);
+  --smooth-50: oklch(0.2 0 0);
+  --smooth-100: oklch(0.235 0 0);
+  --smooth-200: oklch(0.275 0 0);
+  --smooth-300: oklch(0.315 0 0);
+  --smooth-400: oklch(0.36 0 0);
+  --smooth-500: oklch(0.41 0 0);
+  --smooth-600: oklch(0.47 0 0);
+  --smooth-700: oklch(0.55 0 0);
+  --smooth-800: oklch(0.66 0 0);
+  --smooth-900: oklch(0.74 0 0);
+  --smooth-950: oklch(0.85 0 0);
+  --smooth-1000: oklch(0.96 0 0);
+  --destructive-foreground: var(--color-red-600);
+  --success: var(--color-emerald-500);
+  --success-foreground: var(--color-emerald-600);
+  --info: var(--color-violet-500);
+  --info-foreground: var(--color-violet-600);
+  --warning: var(--color-yellow-500);
+  --warning-foreground: var(--color-yellow-600);
+  --invert: var(--color-zinc-700);
+  --invert-foreground: var(--color-zinc-50);
+}
+
+/* ---------------------------------------------------------------------------
+   2. shadcn/ui base tokens.
+   Registry components installed via `npx shadcn add` expect these — bg-background,
+   text-foreground, border-border, bg-card, text-muted-foreground and friends.
+   Don't rename these; the CLI and every installed component depend on them.
+   ------------------------------------------------------------------------- */
 :root {
-  --ground: #ededf5;
-  --surface: #fff;
-  --border: #dbdbe5;
-  --text: #010507;
-  --muted: #57575b;
-  --accent: #010507;
-  color-scheme: light;
+  --radius: 0.625rem;
 }
-* {
-  box-sizing: border-box;
+
+/* ---------------------------------------------------------------------------
+   Radix Colors — 12-step scales. Each step has a fixed job, and the same step
+   number does that job in both themes, so dark mode needs no re-picking:
+   1-2 backgrounds · 3-5 component fills · 6-8 borders · 9-10 solids · 11-12 text
+   ------------------------------------------------------------------------- */
+:root {
+  --slate-1: #fcfcfd;
+  --slate-2: #f9f9fb;
+  --slate-3: #f0f0f3;
+  --slate-4: #e8e8ec;
+  --slate-5: #e0e1e6;
+  --slate-6: #d9d9e0;
+  --slate-7: #cdced6;
+  --slate-8: #b9bbc6;
+  --slate-9: #8b8d98;
+  --slate-10: #80838d;
+  --slate-11: #60646c;
+  --slate-12: #1c2024;
+  --indigo-1: #fdfdfe;
+  --indigo-2: #f7f9ff;
+  --indigo-3: #edf2fe;
+  --indigo-4: #e1e9ff;
+  --indigo-5: #d2deff;
+  --indigo-6: #c1d0ff;
+  --indigo-7: #abbdf9;
+  --indigo-8: #8da4ef;
+  --indigo-9: #3e63dd;
+  --indigo-10: #3358d4;
+  --indigo-11: #3a5bc7;
+  --indigo-12: #1f2d5c;
+  --red-1: #fffcfc;
+  --red-2: #fff7f7;
+  --red-3: #feebec;
+  --red-4: #ffdbdc;
+  --red-5: #ffcdce;
+  --red-6: #fdbdbe;
+  --red-7: #f4a9aa;
+  --red-8: #eb8e90;
+  --red-9: #e5484d;
+  --red-10: #dc3e42;
+  --red-11: #ce2c31;
+  --red-12: #641723;
+  --amber-1: #fefdfb;
+  --amber-2: #fefbe9;
+  --amber-3: #fff7c2;
+  --amber-4: #ffee9c;
+  --amber-5: #fbe577;
+  --amber-6: #f3d673;
+  --amber-7: #e9c162;
+  --amber-8: #e2a336;
+  --amber-9: #ffc53d;
+  --amber-10: #ffba18;
+  --amber-11: #ab6400;
+  --amber-12: #4f3422;
+  --grass-1: #fbfefb;
+  --grass-2: #f5fbf5;
+  --grass-3: #e9f6e9;
+  --grass-4: #daf1db;
+  --grass-5: #c9e8ca;
+  --grass-6: #b2ddb5;
+  --grass-7: #94ce9a;
+  --grass-8: #65ba74;
+  --grass-9: #46a758;
+  --grass-10: #3e9b4f;
+  --grass-11: #2a7e3b;
+  --grass-12: #203c25;
 }
-body {
-  margin: 0;
-  background: var(--ground);
-  color: var(--text);
-  font-family: "Plus Jakarta Sans", system-ui, sans-serif;
-  font-size: 14px;
-  line-height: 1.6;
+
+.dark {
+  --slate-1: #111113;
+  --slate-2: #18191b;
+  --slate-3: #212225;
+  --slate-4: #272a2d;
+  --slate-5: #2e3135;
+  --slate-6: #363a3f;
+  --slate-7: #43484e;
+  --slate-8: #5a6169;
+  --slate-9: #696e77;
+  --slate-10: #777b84;
+  --slate-11: #b0b4ba;
+  --slate-12: #edeef0;
+  --indigo-1: #11131f;
+  --indigo-2: #141726;
+  --indigo-3: #182449;
+  --indigo-4: #1d2e62;
+  --indigo-5: #253974;
+  --indigo-6: #304384;
+  --indigo-7: #3a4f97;
+  --indigo-8: #435db1;
+  --indigo-9: #3e63dd;
+  --indigo-10: #5472e4;
+  --indigo-11: #9eb1ff;
+  --indigo-12: #d6e1ff;
+  --red-1: #191111;
+  --red-2: #201314;
+  --red-3: #3b1219;
+  --red-4: #500f1c;
+  --red-5: #611623;
+  --red-6: #72232d;
+  --red-7: #8c333a;
+  --red-8: #b54548;
+  --red-9: #e5484d;
+  --red-10: #ec5d5e;
+  --red-11: #ff9592;
+  --red-12: #ffd1d9;
+  --amber-1: #16120c;
+  --amber-2: #1d180f;
+  --amber-3: #302008;
+  --amber-4: #3f2700;
+  --amber-5: #4d3000;
+  --amber-6: #5c3d05;
+  --amber-7: #714f19;
+  --amber-8: #8f6424;
+  --amber-9: #ffc53d;
+  --amber-10: #ffd60a;
+  --amber-11: #ffca16;
+  --amber-12: #ffe7b3;
+  --grass-1: #0e1511;
+  --grass-2: #141a15;
+  --grass-3: #1b2a1e;
+  --grass-4: #1d3a24;
+  --grass-5: #25482d;
+  --grass-6: #2d5736;
+  --grass-7: #366740;
+  --grass-8: #3e7949;
+  --grass-9: #46a758;
+  --grass-10: #53b365;
+  --grass-11: #71d083;
+  --grass-12: #c2f0c2;
 }
-button,
-input,
-select {
-  font: inherit;
+
+/* shadcn's semantic tokens now resolve to Radix steps rather than hand-picked
+   values, so every existing component inherits the scale automatically. */
+:root {
+  /* Light mode needs three separated planes. Radix slate 1 and 2 differ by
+     about one percent at the light end, so page and card resolved to the same
+     white and every panel disappeared. Page sits on slate-2, raised surfaces
+     go pure white, the rail recedes to slate-3. Dark mode keeps the scale as
+     it is — the steps separate properly down there. */
+  --background: var(--slate-2);
+  --foreground: var(--slate-12);
+  --card: #ffffff;
+  --card-foreground: var(--slate-12);
+  --popover: #ffffff;
+  --popover-foreground: var(--slate-12);
+  --primary: var(--indigo-9);
+  --primary-foreground: white;
+  --secondary: var(--slate-4);
+  --secondary-foreground: var(--slate-12);
+  --muted: var(--slate-3);
+  --muted-foreground: var(--slate-11);
+  --accent: var(--slate-4);
+  --accent-foreground: var(--slate-12);
+  --destructive: var(--red-9);
+  --destructive-foreground: white;
+  /* Dark defines --info and light never did, because nothing used it. The
+     streak calendar does now: it colours the days grace covered. Violet rather
+     than the indigo --primary already uses, so a day the streak merely
+     survived cannot be mistaken for one that was kept. Two literal steps from
+     the Radix violet scale — 9 solid, 11 text — rather than importing all
+     twelve for a colour used in one place. */
+  --info: #6e56cf;
+  --info-foreground: #6550b9;
+  --border: var(--slate-6);
+  --input: var(--slate-7);
+  --ring: var(--indigo-8);
+  --chart-1: var(--indigo-9);
+  --chart-2: var(--grass-9);
+  --chart-3: var(--amber-9);
+  --chart-4: var(--red-9);
+  --chart-5: var(--slate-9);
+  --sidebar: var(--slate-3);
+  --sidebar-foreground: var(--slate-12);
+  --sidebar-primary: var(--indigo-9);
+  --sidebar-primary-foreground: white;
+  --sidebar-accent: var(--slate-5);
+  --sidebar-accent-foreground: var(--slate-12);
+  --sidebar-border: var(--slate-6);
+  --sidebar-ring: var(--indigo-8);
 }
-button,
-summary,
-select {
+
+/* Must come after :root — both are one class of specificity, so order decides.
+   Dark keeps the original mapping (page on slate-1, raised surfaces on
+   slate-2), which separates fine at this end of the scale. Without this the
+   light-mode literals above leak into dark and cards render white. */
+.dark {
+  --background: var(--slate-1);
+  --card: var(--slate-2);
+  --popover: var(--slate-2);
+  --sidebar: var(--slate-2);
+  --sidebar-accent: var(--slate-4);
+  /* Restated here for exactly the reason the note above gives. Dark sets these
+     in the earlier block, but :root now sets them too and sits further down
+     the file at equal specificity, so the light violet was winning in dark as
+     well and both themes drew the same frozen day. */
+  --info: var(--color-violet-500);
+  --info-foreground: var(--color-violet-600);
+}
+
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-brand: var(--brand, oklch(0.72 0.2 352.53));
+  --color-brand-light: var(--brand-light, oklch(0.78 0.15 352.53));
+  --color-brand-lighter: var(--brand-lighter, oklch(0.85 0.1 352.53));
+  --color-brand-secondary: var(--brand-secondary, oklch(0.66 0.21 354.31));
+  --color-amber: var(--amber);
+  --color-amber-fg: var(--amber-fg);
+  --color-amber-hover: var(--amber-hover);
+  --color-blue: var(--blue);
+  --color-blue-fg: var(--blue-fg);
+  --color-blue-hover: var(--blue-hover);
+  --color-green: var(--green);
+  --color-green-fg: var(--green-fg);
+  --color-green-hover: var(--green-hover);
+  --color-smooth-50: var(--smooth-50);
+  --color-smooth-100: var(--smooth-100);
+  --color-smooth-200: var(--smooth-200);
+  --color-smooth-300: var(--smooth-300);
+  --color-smooth-400: var(--smooth-400);
+  --color-smooth-500: var(--smooth-500);
+  --color-smooth-600: var(--smooth-600);
+  --color-smooth-700: var(--smooth-700);
+  --color-smooth-800: var(--smooth-800);
+  --color-smooth-900: var(--smooth-900);
+  --color-smooth-950: var(--smooth-950);
+  --color-smooth-1000: var(--smooth-1000);
+  --color-invert-foreground: var(--invert-foreground);
+  --color-invert: var(--invert);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-warning: var(--warning);
+  --color-info-foreground: var(--info-foreground);
+  --color-info: var(--info);
+  --color-success-foreground: var(--success-foreground);
+  --color-success: var(--success);
+}
+
+@layer base {
+  * {
+    border-color: var(--color-g-line);
+  }
+
+  html {
+    color-scheme: light;
+  }
+
+  html.dark {
+    color-scheme: dark;
+  }
+
+  h1, h2, h3 {
+    font-family: var(--font-display);
+    letter-spacing: -0.015em;
+  }
+
+  body {
+    background: var(--color-g-canvas);
+    color: var(--color-g-ink);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  ::selection {
+    background: color-mix(in oklab, var(--color-g-brand) 25%, transparent);
+  }
+}
+
+@layer utilities {
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-g-line) transparent;
+  }
+}
+
+/* Shiki emits both light and dark token colors; swap them with the theme. */
+.shiki,
+.shiki span {
+  color: var(--shiki-light);
+  background-color: var(--shiki-light-bg);
+}
+
+.dark .shiki,
+.dark .shiki span {
+  color: var(--shiki-dark);
+  background-color: var(--shiki-dark-bg);
+}
+
+/* ---------------------------------------------------------------------------
+   Reduce motion. Covers CSS animations, transitions and scroll behaviour —
+   the JavaScript-driven ones are handled by MotionProvider, and the canvas
+   effects guard themselves.
+   ------------------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Scoped to the gallery's own toggle, which drives its wipe from script and
+   needs the default cross-fade out of the way. It must not be global: other
+   theme toggles in this library animate these same pseudo-elements with CSS
+   keyframes, and an unscoped `animation: none` silently kills them. */
+[data-vt-wipe] ::view-transition-old(root),
+[data-vt-wipe] ::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+[data-vt-wipe] ::view-transition-old(root) {
+  z-index: 0;
+}
+[data-vt-wipe] ::view-transition-new(root) {
+  z-index: 1;
+}
+
+/* Notes settle onto the board rather than appearing all at once. The delay is
+   set per card from its index, so the eye follows the order they are in. */
+@keyframes note-settle {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.note-settle {
+  animation: note-settle 0.34s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .note-settle {
+    animation: none;
+  }
+}
+
+
+
+
+
+/* Someone who asked for less movement gets the first frame, held. */
+@media (prefers-reduced-motion: reduce) {
+  .coin-spin {
+    animation: none;
+  }
+}
+
+
+
+/* ---------------------------------------------------------------------------
+   Notes. The editor ships no styling of its own — ProseMirror gives you
+   semantic HTML and expects the app to say what a bullet looks like.
+   ------------------------------------------------------------------------- */
+.note-prose > * + * {
+  margin-top: 0.5em;
+}
+
+.note-prose h1 { font-size: 1.15rem; font-weight: 600; letter-spacing: -0.01em; }
+.note-prose h2 { font-size: 1.05rem; font-weight: 600; }
+.note-prose h3 { font-size: 0.95rem; font-weight: 600; }
+
+.note-prose ul,
+.note-prose ol {
+  padding-left: 1.15em;
+}
+.note-prose ul { list-style: disc; }
+.note-prose ol { list-style: decimal; }
+.note-prose li::marker { color: var(--muted-foreground); }
+.note-prose li > p { margin: 0; }
+/* A nested list is a continuation of its parent item, not a new paragraph. */
+.note-prose li > ul,
+.note-prose li > ol {
+  margin-top: 0.25em;
+}
+
+/* Checkboxes. The list loses its bullets — a tick is already a marker, and two
+   markers on one line reads as a typo. */
+.note-prose ul[data-type="taskList"] {
+  list-style: none;
+  padding-left: 0;
+}
+
+.note-prose ul[data-type="taskList"] li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5em;
+}
+
+.note-prose ul[data-type="taskList"] li > label {
+  /* Holds the box on the first line as the text beside it wraps, and centres
+     it on that line. A nudged margin was guesswork against a line-height of
+     1.625, and left the box riding visibly high. Giving the label the height
+     of one line and centring inside it lands the two on the same middle
+     whatever the type size does. */
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  height: 1.625em;      /* the line-height, for anything without `lh` */
+  height: 1lh;
+  user-select: none;
+}
+
+.note-prose ul[data-type="taskList"] li > div {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.note-prose input[type="checkbox"] {
+  appearance: none;
+  width: 0.95em;
+  height: 0.95em;
+  border: 1px solid var(--border);
+  border-radius: 0.25em;
+  background: transparent;
+  cursor: pointer;
+  display: grid;
+  place-content: center;
+  transition: background-color 120ms ease, border-color 120ms ease;
+}
+
+.note-prose input[type="checkbox"]:hover {
+  border-color: var(--muted-foreground);
+}
+
+.note-prose input[type="checkbox"]:checked {
+  background: var(--primary);
+  border-color: var(--primary);
+}
+
+/* The tick, drawn rather than typed, so it scales with the box. */
+.note-prose input[type="checkbox"]:checked::after {
+  content: "";
+  width: 0.5em;
+  height: 0.28em;
+  border-left: 2px solid var(--primary-foreground);
+  border-bottom: 2px solid var(--primary-foreground);
+  transform: rotate(-45deg) translate(0.03em, -0.06em);
+}
+
+/* A finished item steps back without disappearing. */
+.note-prose li[data-checked="true"] > div {
+  color: var(--muted-foreground);
+  text-decoration: line-through;
+  text-decoration-color: color-mix(in oklab, var(--muted-foreground) 55%, transparent);
+}
+
+.note-prose img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 0.5rem;
+  border: 1px solid var(--border);
+}
+
+.note-prose code {
+  font-size: 0.9em;
+  padding: 0.1em 0.3em;
+  border-radius: 0.25em;
+  background: var(--muted);
+}
+
+.note-prose pre {
+  padding: 0.7em 0.8em;
+  border-radius: 0.5em;
+  background: var(--muted);
+  overflow-x: auto;
+}
+.note-prose pre code { background: none; padding: 0; }
+
+.note-prose blockquote {
+  padding-left: 0.8em;
+  border-left: 2px solid var(--border);
+  color: var(--muted-foreground);
+}
+
+/* The placeholder, which is a data attribute rather than real text. */
+.note-prose p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+  color: var(--muted-foreground);
+}
+
+/* A note on the dashboard is a reminder, not a workspace. Nothing in it is
+   clickable, so nothing in it should look clickable. */
+.note-preview .note-prose input[type="checkbox"] {
+  pointer-events: none;
+  opacity: 0.7;
+}
+.note-preview .note-prose img {
+  max-height: 6rem;
+  object-fit: cover;
+}
+
+.note-prose a {
+  color: var(--primary);
+  text-decoration: underline;
+  text-underline-offset: 2px;
   cursor: pointer;
 }
-button:focus-visible,
-input:focus-visible,
-select:focus-visible,
-summary:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 3px;
+.note-prose a:hover {
+  text-decoration-thickness: 2px;
 }
-code,
-time {
-  font-family: "Spline Sans Mono", monospace;
-  font-size: 12px;
-}
-h1,
-h2,
-h3,
-p {
-  margin-top: 0;
-}
-.ck-workspace {
-  max-width: 1160px;
-  margin: auto;
-  padding: 48px 32px;
-}
-.ck-workspace-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 24px;
-  margin-bottom: 32px;
-}
-.ck-eyebrow {
-  font-size: 12px;
-  color: var(--muted);
-  margin-bottom: 12px;
-}
-.ck-workspace h1 {
-  font-size: 32px;
-  line-height: 1.2;
-  font-weight: 500;
-  letter-spacing: -0.04em;
-  margin: 0;
-}
-.ck-intro {
-  color: var(--muted);
-  margin: 12px 0 0;
-}
-.ck-tag {
-  flex-shrink: 0;
-  font-size: 12px;
-  padding: 4px 10px;
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  color: var(--muted);
-  white-space: nowrap;
-}
-.ck-workspace-grid {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: 24px;
-  align-items: flex-start;
-}
-.ck-panel {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  padding: 28px;
-  min-width: 0;
-}
-.ck-incident-picker {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding-bottom: 24px;
-  border-bottom: 1px solid var(--border);
-}
-.ck-incident-picker label {
-  font-size: 12px;
-  color: var(--muted);
-}
-.ck-incident-picker select {
-  flex: 1;
-  min-width: 0;
-  max-width: 100%;
-  color: var(--text);
-  background: #f7f7f9;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 10px;
-}
-.ck-detail {
-  padding: 24px 0;
-}
-.ck-status-label {
-  display: inline-block;
-  color: var(--muted);
-  font-size: 12px;
-  margin-bottom: 12px;
-}
-.ck-detail h2 {
-  font-size: 24px;
-  font-weight: 500;
-  line-height: 1.35;
-  letter-spacing: -0.025em;
-  margin-bottom: 12px;
-}
-.ck-detail p {
-  color: var(--muted);
-  margin-bottom: 16px;
-}
-.ck-more summary {
-  font-size: 12px;
-  padding: 8px 0;
-}
-.ck-more h3 {
-  font-size: 12px;
-  font-weight: 600;
-  margin-bottom: 8px;
-}
-.ck-detail-facts {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 16px;
-  margin: 16px 0 24px;
-  font-size: 12px;
-}
-.ck-detail-facts dt {
-  color: var(--muted);
-}
-.ck-detail-facts dd {
-  margin: 4px 0 0;
-}
-.ck-timeline {
-  padding: 0;
-  margin: 0;
-  list-style: none;
-}
-.ck-timeline li {
-  display: grid;
-  grid-template-columns: 80px minmax(0, 1fr);
-  gap: 12px;
-  padding-top: 12px;
-  font-size: 12px;
-}
-.ck-timeline time {
-  color: var(--muted);
-  font-size: 10px;
-  padding-top: 2px;
-}
-.ck-timeline strong {
-  font-weight: 500;
-}
-.ck-timeline p {
-  margin: 4px 0 0;
-}
-.ck-followups {
-  padding-top: 24px;
-  border-top: 1px solid var(--border);
-}
-.ck-followups h2,
-.ck-assistant-header h2 {
-  font-size: 16px;
-  line-height: 1.4;
-  font-weight: 600;
-  margin: 0 0 8px;
-}
-.ck-task-list {
-  list-style: none;
-  padding: 0;
-  margin: 16px 0;
-}
-.ck-task-list li {
-  display: flex;
-  align-items: baseline;
-  gap: 12px;
-  padding: 10px 0;
-  overflow-wrap: anywhere;
-}
-.ck-task-list li + li {
-  border-top: 1px solid var(--border);
-}
-.ck-empty {
-  color: var(--muted);
-  font-size: 12px;
-  margin-bottom: 16px;
-}
-.ck-task-form {
-  display: flex;
-  gap: 8px;
-}
-.ck-task-form input {
-  width: 100%;
-  min-width: 0;
-  border: 1px solid var(--border);
-  background: var(--surface);
-  border-radius: 8px;
-  padding: 10px 12px;
-  color: var(--text);
-}
-.ck-task-form .ck-btn {
-  padding: 10px 16px;
-  border-radius: 8px;
-}
-.ck-local-note,
-.ck-notice {
-  font-size: 12px;
-  margin: 10px 0 0;
-  color: var(--muted);
-}
-.ck-notice:empty {
-  margin: 0;
-}
-.ck-assistant {
-  display: flex;
-  flex-direction: column;
-  height: 600px;
-  height: min(680px, max(510px, calc(100dvh - 230px)));
-  padding: 0;
-  overflow: hidden;
-}
-.ck-assistant-header {
-  padding: 24px 28px;
-  border-bottom: 1px solid var(--border);
-}
-.ck-assistant-header p {
-  font-size: 12px;
-  margin: 0;
-  color: var(--muted);
-}
+
+/* ---------------------------------------------------------------------------
+   COCO. The chat column fills its aside; CopilotKit's own stylesheet
+   handles the rest.
+   ------------------------------------------------------------------------- */
 .ck-chat {
   flex: 1;
   min-height: 0;
 }
-.ck-sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
-  border: 0;
-}
-/* The optional voice example uses the same basic page frame. */
-.ck-page {
-  max-width: 46rem;
-  margin: auto;
-  padding: 48px 24px;
-}
-.ck-dek {
-  color: var(--muted);
-}
-@media (max-width: 800px) {
-  .ck-workspace {
-    padding: 32px 20px;
-  }
-  .ck-workspace-grid {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 16px;
-  }
-  .ck-assistant {
-    height: 560px;
-  }
-}
-@media (max-width: 480px) {
-  .ck-workspace {
-    padding: 24px 16px;
-  }
-  .ck-workspace-header {
-    align-items: flex-start;
-    flex-wrap: wrap;
-    gap: 16px;
-    margin-bottom: 24px;
-  }
-  .ck-workspace h1 {
-    font-size: 28px;
-  }
-  .ck-panel {
-    padding: 20px;
-  }
-  .ck-detail h2 {
-    font-size: 22px;
-  }
-  .ck-detail-facts {
-    grid-template-columns: 1fr 1fr;
-  }
-  .ck-assistant {
-    padding: 0;
-  }
-  .ck-assistant-header {
-    padding: 20px;
-  }
+
+/* Let the water show through the chat column too. */
+.ck-chat,
+.ck-chat > div {
+  background: transparent;
 }
 
-/* ── agent-rendered cards ──────────────────────────────────────────────── */
-.ck-card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-left: 3px solid var(--muted);
-  border-radius: 3px;
-  padding: 0.9rem 1rem;
-  margin: 0.5rem 0;
-  font-size: 0.92rem;
-}
-.ck-card--gate {
-  border-left-color: var(--accent);
-}
-.ck-card h3 {
-  margin: 0 0 0.4rem;
-  font-size: 0.98rem;
-}
-.ck-card p {
-  margin: 0 0 0.5rem;
-  color: var(--muted);
-}
-.ck-card p:last-child {
-  margin-bottom: 0;
-}
-.ck-gate-done {
-  font-style: italic;
-}
-
-.ck-facts {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.6rem;
-  margin: 0.6rem 0 0;
-}
-.ck-facts dt {
-  font-family: ui-monospace, monospace;
-  font-size: 0.65rem;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--muted);
-}
-.ck-facts dd {
-  margin: 0.1rem 0 0;
-}
-.ck-steps {
-  margin: 0.6rem 0 0;
-  padding-left: 1.1rem;
-  color: var(--muted);
-}
-
-.ck-scroll {
-  overflow-x: auto;
-}
-.ck-card table {
-  border-collapse: collapse;
-  width: 100%;
-  font-size: 0.87rem;
-}
-.ck-card th,
-.ck-card td {
-  text-align: left;
-  padding: 0.4rem 0.6rem;
-  border-bottom: 1px solid var(--border);
-}
-.ck-card th {
-  font-family: ui-monospace, monospace;
-  font-size: 0.65rem;
-  letter-spacing: 0.09em;
-  text-transform: uppercase;
-  color: var(--muted);
-  font-weight: 500;
-}
-
-.ck-actions {
+/* ---------------------------------------------------------------------------
+   Chat panel, modelled on the current crop of assistant UIs: a quiet centred
+   greeting, starter prompts as a stack of tappable cards rather than loose
+   pills, and a compact glass composer with a small send control.
+   ------------------------------------------------------------------------- */
+.ck-chat-empty {
   display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 3.5rem 1.5rem 0;
+  text-align: center;
+}
+.ck-chat-mark {
+  display: grid;
+  place-items: center;
+  width: 3.25rem;
+  height: 3.25rem;
+  margin-bottom: 0.25rem;
+  color: var(--primary);
+  filter: drop-shadow(0 0 12px color-mix(in oklab, var(--primary) 55%, transparent));
+  cursor: default;
+}
+.ck-chat-mark svg {
+  width: 30px;
+  height: 30px;
+}
+
+/* Starter prompts: one column of cards, full width, left-aligned text. */
+.ck-chat--empty .copilotKitMessages + div {
+  margin-top: 1.25rem !important;
+  padding: 0 1.25rem !important;
+}
+.ck-chat--empty .copilotKitMessages + div > div {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
   gap: 0.5rem;
-  margin-top: 0.75rem;
+  padding: 0 !important;
 }
-.ck-btn {
-  font: inherit;
-  font-size: 0.85rem;
-  padding: 0.35rem 0.8rem;
-  cursor: pointer;
-  background: var(--surface);
-  color: var(--text);
-  border: 1px solid var(--border);
-  border-radius: 3px;
-}
-.ck-btn:hover {
-  border-color: var(--muted);
-}
-.ck-btn--primary {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: #fff;
-}
-.ck-btn--tiny {
-  font-size: 0.75rem;
-  padding: 0.15rem 0.5rem;
-}
-.ck-btn:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
-}
-
-.ck-status {
-  align-self: center;
-  font-family: ui-monospace, monospace;
-  font-size: 0.7rem;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--muted);
-}
-.ck-status[data-status="live"] {
-  color: #2e7d5b;
-}
-.ck-status[data-status="error"] {
-  color: var(--accent);
-}
-.ck-transcript {
-  font-family: ui-monospace, monospace;
-  font-size: 0.8rem;
-  line-height: 1.8;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 3px;
-  padding: 0.9rem 1rem;
-  overflow-x: auto;
-  white-space: pre-wrap;
-}
-
-/* Persistent workplace follow-ups */
-.ck-followups-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
-}
-.ck-task-form--stacked {
-  display: grid;
-  gap: 8px;
-  margin-top: 16px;
-}
-.ck-task-form--stacked input,
-.ck-task-form--stacked textarea {
+.ck-chat--empty .copilotKitMessages + div button {
+  position: relative;
   width: 100%;
-  min-width: 0;
-  border: 1px solid var(--border);
-  background: var(--surface);
-  border-radius: 8px;
-  padding: 10px 12px;
-  color: var(--text);
-}
-.ck-task-form--stacked textarea {
-  resize: vertical;
-}
-.ck-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-.ck-record-id {
-  display: block;
-  overflow-wrap: anywhere;
-  font-size: 12px;
-  margin: 5px 0;
-}
-.ck-muted {
-  color: var(--muted);
-  font-size: 12px;
-}
-.ck-task-list .ck-muted {
-  display: block;
-}
-.ck-preserve-lines {
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-}
-.ck-setup-note,
-.ck-approval {
-  background: #f7f7f9;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 16px;
-  margin: 16px 0;
-  overflow-wrap: anywhere;
-}
-.ck-setup-note p,
-.ck-approval p {
+  height: auto !important;
+  justify-content: flex-start;
+  padding: 0.7rem 2.25rem 0.7rem 0.9rem !important;
+  border-radius: 0.8rem !important;
+  border: 1px solid color-mix(in oklab, var(--foreground) 12%, transparent) !important;
+  background: color-mix(in oklab, var(--foreground) 6%, transparent) !important;
+  color: color-mix(in oklab, var(--foreground) 82%, transparent) !important;
   font-size: 13px;
-  line-height: 1.6;
+  font-weight: 450 !important;
+  box-shadow: none !important;
+  backdrop-filter: blur(14px);
+  transition: border-color 0.2s, background 0.2s, color 0.2s, transform 0.2s;
 }
-.ck-approval h3 {
-  font-size: 14px;
-  margin-bottom: 8px;
+/* A quiet arrow that slides in on hover, the way starter prompts do in Claude. */
+.ck-chat--empty .copilotKitMessages + div button::after {
+  content: "→";
+  position: absolute;
+  right: 0.9rem;
+  top: 50%;
+  translate: -4px -50%;
+  opacity: 0;
+  color: var(--primary);
+  transition: opacity 0.2s, translate 0.2s;
 }
-.ck-approval-actions {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
+.ck-chat--empty .copilotKitMessages + div button:hover {
+  border-color: color-mix(in oklab, var(--primary) 50%, transparent) !important;
+  background: color-mix(in oklab, var(--foreground) 10%, transparent) !important;
+  color: var(--foreground) !important;
+  transform: translateY(-1px);
 }
-.ck-error {
-  color: #a12730;
-  background: #fff1f2;
-  padding: 12px;
-  border-radius: 8px;
-  font-size: 13px;
-  overflow-wrap: anywhere;
+.ck-chat--empty .copilotKitMessages + div button:hover::after {
+  opacity: 1;
+  translate: 0 -50%;
+}
+.ck-chat--empty .copilotKitMessages + div button span {
+  white-space: normal !important;
+  text-align: left;
+}
+
+/* The composer: glass, one line tall until it needs more. */
+.ck-chat .copilotKitInput {
+  border-radius: calc(1.25rem - 2px) !important;
+  border: 0 !important;
+  background: color-mix(in oklab, var(--card) 85%, transparent) !important;
+  box-shadow: none !important;
+  backdrop-filter: blur(18px);
+}
+.ck-composer {
+  box-shadow: 0 10px 30px -14px rgb(0 0 0 / 0.55);
+}
+.ck-chat .copilotKitInput > div {
+  padding: 0.35rem 0.45rem 0.35rem 0.3rem !important;
+  column-gap: 0.4rem !important;
+}
+.ck-chat .copilotKitInput [class*="min-h-"] {
+  min-height: 38px !important;
+}
+.ck-chat .copilotKitInput textarea {
+  font-size: 14px !important;
+  line-height: 1.4 !important;
+  padding: 0.5rem 0.25rem !important;
+}
+
+/* The send pill, at composer scale. */
+.ck-chat .gen-btn {
+  --border-radius: 999px;
+  --padding: 3px;
+  font-size: 11px !important;
+  padding: 0.4rem 0.7rem 0.4rem 0.8rem !important;
+}
+.ck-chat .gen-btn .gen-txt-wrapper {
+  min-width: 3.2em !important;
+}
+.ck-chat .gen-btn .gen-btn-svg {
+  height: 14px !important;
+  margin-right: 0.3rem !important;
+}
+
+/* CopilotKit paints two near-black plates behind the prompts and the composer;
+   without this they show as squares around the rounded corners. */
+.ck-chat .copilotKitMessages + div > div,
+.ck-chat > div:last-child > div,
+.ck-chat > div:last-child > div > div {
+  background: transparent !important;
 }
