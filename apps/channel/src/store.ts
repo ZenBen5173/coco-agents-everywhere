@@ -44,9 +44,10 @@ export function supabaseStore(): CommitStore {
     },
     async insertCaptures(rows) {
       if (!rows.length) return 0;
+      const clean = rows.map(({ supersedes_id: _s, ...fields }) => fields);
       const { data, error } = await db
         .from("captures")
-        .upsert(rows, { onConflict: "source_ts,type,title", ignoreDuplicates: true })
+        .upsert(clean, { onConflict: "source_ts,type,title", ignoreDuplicates: true })
         .select("id");
       fail("captures insert", error);
       return data?.length ?? 0;

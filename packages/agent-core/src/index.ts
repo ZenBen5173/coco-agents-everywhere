@@ -17,6 +17,7 @@ export {
   type ExtractInput,
   type ExtractableMessage,
   type ExtractedCapture,
+  type KnownThing,
 } from "./capabilities/extract";
 export { serviceClient, isSupabaseConfigured } from "./supabase";
 export { summary as gameSummary, awardForItem, claimQuests, openEgg, setEquipped, PETS, EGGS, QUESTS } from "./capabilities/game";

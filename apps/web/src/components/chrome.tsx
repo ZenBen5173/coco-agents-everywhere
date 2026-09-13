@@ -12,7 +12,7 @@
  */
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useRef, useState, type ReactNode } from "react";
+import { Suspense, useRef, useState, type ReactNode } from "react";
 import { motion } from "motion/react";
 import { MessageSquare, Menu, X } from "lucide-react";
 import { CheckCheckIcon } from "@/components/ui/check-check";
@@ -147,7 +147,10 @@ function Body({ children }: { children: ReactNode }) {
             {/* Lists, used the way a calendar uses tags: click one to see only
                 it, click again to clear. Hidden at icon width, where a column
                 of coloured dots says nothing. */}
-            <ListsGroup />
+            {/* useSearchParams needs a boundary or the static /_not-found prerender fails. */}
+            <Suspense fallback={null}>
+              <ListsGroup />
+            </Suspense>
           </SidebarContent>
           <SidebarFooter className="gap-2 group-data-[collapsible=icon]:hidden">
             <CalendarStatus />

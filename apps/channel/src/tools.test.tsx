@@ -69,6 +69,7 @@ describe("capture_from_thread", () => {
     const posted: unknown[] = [];
     const extract = mock.fn(async () => [
       {
+        supersedes_id: null,
         type: "commitment" as const,
         title: "Send the deck",
         owner_slack_id: "U1",
@@ -103,6 +104,7 @@ describe("capture_from_thread", () => {
   it("ignores duplicates on a second read of the same thread", async () => {
     const store = memoryStore();
     const capture = {
+      supersedes_id: null,
       type: "decision" as const,
       title: "Use Supabase",
       owner_slack_id: null,
