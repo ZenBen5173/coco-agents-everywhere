@@ -2,7 +2,7 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { serviceClient } from "agent-core/supabase";
-import { redirectUri } from "@/app/api/google/start/route";
+import { redirectUri } from "@/lib/server/google-redirect";
 
 export const dynamic = "force-dynamic";
 

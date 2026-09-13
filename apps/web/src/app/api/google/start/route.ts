@@ -9,14 +9,9 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { CALENDAR_SCOPES } from "agent-core";
+import { redirectUri } from "@/lib/server/google-redirect";
 
 export const dynamic = "force-dynamic";
-
-export function redirectUri(request: Request): string {
-  // Built from the request, so localhost and a deployment each send Google the
-  // address they are actually reachable at. It must be listed on the OAuth client.
-  return new URL("/api/google/callback", new URL(request.url).origin).toString();
-}
 
 export async function GET(request: Request) {
   const clientId = process.env.GOOGLE_CLIENT_ID?.trim();
